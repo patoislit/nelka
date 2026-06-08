@@ -203,7 +203,9 @@
     "export_pdf": "Export PDF", "export_excel": "Export Excel",
     "confirm_delete_item": "Naozaj odstrániť túto kartu?",
     "select_item": "Vybrať položku",
-    "movement_type": "Typ pohybu"
+    "movement_type": "Typ pohybu",
+    "search_placeholder": "Hľadať podľa názvu alebo kódu...",
+    "no_results": "Žiadne výsledky"
   },
   "common": {
     "save": "Uložiť", "cancel": "Zrušiť", "delete": "Odstrániť", "edit": "Upraviť",

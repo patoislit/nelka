@@ -205,7 +205,9 @@
     "export_pdf": "Export PDF", "export_excel": "Export Excel",
     "confirm_delete_item": "Really delete this item?",
     "select_item": "Select item",
-    "movement_type": "Movement type"
+    "movement_type": "Movement type",
+    "search_placeholder": "Search by name or code...",
+    "no_results": "No results found"
   },
   "common": {
     "save": "Save", "cancel": "Cancel", "delete": "Delete", "edit": "Edit",

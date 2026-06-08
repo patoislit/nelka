@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Pencil, Trash2, ArrowUpDown, FileText, FileSpreadsheet } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUpDown, FileText, FileSpreadsheet, Search, X } from 'lucide-react';
 import { useDark } from '../../store/themeStore';
 import { useWarehouseStore } from '../../store/warehouseStore';
 import type { WarehouseItem } from '../../store/warehouseStore';
@@ -44,6 +44,7 @@ export function WarehousePage() {
   const [editItem, setEditItem] = useState<WarehouseItem | undefined>(undefined);
   const [movementModalOpen, setMovementModalOpen] = useState(false);
   const [movementItemId, setMovementItemId] = useState<string | undefined>(undefined);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!company) return;
@@ -78,6 +79,12 @@ export function WarehousePage() {
 
   const items = getItemsForCompany(company.id);
   const movements = getMovementsForCompany(company.id);
+  const filteredItems = search.trim()
+    ? items.filter((it) =>
+        it.name.toLowerCase().includes(search.toLowerCase()) ||
+        it.code.toLowerCase().includes(search.toLowerCase())
+      )
+    : items;
   const totalValue = items.reduce((sum, it) => sum + it.quantity * it.purchasePriceCents, 0);
 
   const exportPdf = () => {
@@ -174,6 +181,30 @@ export function WarehousePage() {
       {/* Items tab */}
       {tab === 'items' && (
         <>
+          {/* Search bar */}
+          <div style={{ position: 'relative', marginBottom: 14, maxWidth: 340 }}>
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: textMuted, pointerEvents: 'none' }} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('warehouse.search_placeholder')}
+              style={{
+                width: '100%', padding: '9px 36px', borderRadius: 10,
+                border: `1px solid ${border}`, background: surface,
+                color: textMain, fontSize: 13, fontFamily: "'Inter', sans-serif",
+                boxSizing: 'border-box', outline: 'none',
+              }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: textMuted, padding: 2, display: 'flex', alignItems: 'center' }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
           {/* Summary card */}
           <div style={{ background: surface, borderRadius: 14, border: `1px solid ${border}`, padding: '16px 20px', marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 12 }}>
             <div>
@@ -189,6 +220,11 @@ export function WarehousePage() {
                 <div style={{ fontSize: 15, fontWeight: 600, color: textMuted }}>{t('warehouse.empty')}</div>
                 <div style={{ fontSize: 13, color: textMuted, marginTop: 4 }}>{t('warehouse.empty_desc')}</div>
               </div>
+            ) : filteredItems.length === 0 ? (
+              <div style={{ padding: '48px 24px', textAlign: 'center' as const }}>
+                <Search size={36} style={{ color: dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb', marginBottom: 12 }} />
+                <div style={{ fontSize: 14, fontWeight: 600, color: textMuted }}>{t('warehouse.no_results')}</div>
+              </div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
                 <thead>
@@ -199,7 +235,7 @@ export function WarehousePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
+                  {filteredItems.map((item) => (
                     <tr
                       key={item.id}
                       style={{ borderBottom: `1px solid ${border}` }}

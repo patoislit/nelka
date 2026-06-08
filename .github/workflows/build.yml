@@ -53,8 +53,6 @@ jobs:
   release:
     needs: [build-windows, build-mac]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -69,26 +67,6 @@ jobs:
         with:
           name: mac
           path: artifacts
-
-      - name: Delete existing latest release
-        run: gh release delete latest --yes --cleanup-tag 2>/dev/null || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create latest release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: Nelka – najnovšia verzia
-          body: |
-            ## Nelka ${{ github.ref_name }}
-            - **Windows** — stiahni `Nelka-Windows.exe`, dvojklikom spusti
-            - **Mac** — stiahni `Nelka-Mac.dmg`, otvor a presuň do Applications
-            ### Web app
-            https://nelka-87b28.web.app
-          files: |
-            artifacts/Nelka-Windows.exe
-            artifacts/Nelka-Mac.dmg
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -153,9 +131,10 @@ jobs:
             });
           }
 
+          const ws = process.env.GITHUB_WORKSPACE;
           const token = await getToken();
-          await upload(token, 'artifacts/Nelka-Windows.exe', 'Nelka-Windows.exe');
-          await upload(token, 'artifacts/Nelka-Mac.dmg', 'Nelka-Mac.dmg');
+          await upload(token, `${ws}/artifacts/Nelka-Windows.exe`, 'Nelka-Windows.exe');
+          await upload(token, `${ws}/artifacts/Nelka-Mac.dmg`, 'Nelka-Mac.dmg');
           console.log('Firebase Storage upload complete!');
           EOF
           node /tmp/upload.mjs
