@@ -68,10 +68,19 @@ jobs:
           name: mac
           path: artifacts
 
-      - name: Create GitHub Release
+      - name: Delete existing latest release
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v4
+
+      - name: Create latest release
         uses: softprops/action-gh-release@v2
         with:
-          name: Nelka ${{ github.ref_name }}
+          tag_name: latest
+          name: Nelka – najnovšia verzia
           body: |
             ## Nelka ${{ github.ref_name }}
 
