@@ -207,7 +207,10 @@
     "select_item": "Select item",
     "movement_type": "Movement type",
     "search_placeholder": "Search by name or code...",
-    "no_results": "No results found"
+    "no_results": "No results found",
+    "price": "Price",
+    "price_per_unit": "Unit price",
+    "total_price": "Total price"
   },
   "common": {
     "save": "Save", "cancel": "Cancel", "delete": "Delete", "edit": "Edit",

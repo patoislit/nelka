@@ -85,7 +85,7 @@ export function WarehousePage() {
         it.code.toLowerCase().includes(search.toLowerCase())
       )
     : items;
-  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.purchasePriceCents, 0);
+  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.salePriceCents, 0);
 
   const exportPdf = () => {
     const doc = new jsPDF();
@@ -95,8 +95,8 @@ export function WarehousePage() {
     doc.text(`${t('warehouse.total_value')}: ${centsToEur(totalValue)} €`, 14, 26);
     autoTable(doc, {
       startY: 32,
-      head: [[t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.purchase_price'), t('warehouse.sale_price')]],
-      body: items.map((it) => [it.code, it.name, it.unit, it.quantity, centsToEur(it.purchasePriceCents) + ' €', centsToEur(it.salePriceCents) + ' €']),
+      head: [[t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.price')]],
+      body: items.map((it) => [it.code, it.name, it.unit, it.quantity, centsToEur(it.salePriceCents) + ' €']),
       styles: { fontSize: 9 },
     });
     doc.save(`sklad-${company.name}.pdf`);
@@ -105,7 +105,7 @@ export function WarehousePage() {
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([
       [t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.purchase_price') + ' €', t('warehouse.sale_price') + ' €'],
-      ...items.map((it) => [it.code, it.name, it.unit, it.quantity, (it.purchasePriceCents / 100).toFixed(2), (it.salePriceCents / 100).toFixed(2)]),
+      ...items.map((it) => [it.code, it.name, it.unit, it.quantity, (it.salePriceCents / 100).toFixed(2)]),
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sklad');
@@ -229,7 +229,7 @@ export function WarehousePage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${border}` }}>
-                    {[t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.sale_price'), ''].map((h, i) => (
+                    {[t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.price'), ''].map((h, i) => (
                       <th key={i} style={{ padding: '12px 16px', textAlign: i < 4 ? 'left' as const : 'right' as const, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>

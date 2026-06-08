@@ -97,7 +97,7 @@ export function WarehouseItemModal({ open, onClose, item }: Props) {
         </div>
 
         <div>
-          <label style={labelStyle}>{t('warehouse.sale_price')} (€)</label>
+          <label style={labelStyle}>{t('warehouse.price')} (€)</label>
           <input
             style={{ ...inputStyle, fontSize: 18, fontWeight: 700, color: '#f97316', textAlign: 'right' }}
             type="text" inputMode="decimal"

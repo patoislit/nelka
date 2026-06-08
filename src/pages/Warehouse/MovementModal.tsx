@@ -5,7 +5,7 @@ import { Button } from '../../components/common/Button';
 import { useDark } from '../../store/themeStore';
 import { useWarehouseStore } from '../../store/warehouseStore';
 import type { MovementType } from '../../store/warehouseStore';
-import { eurToCents } from '../../store/transactionStore';
+import { centsToEur } from '../../store/transactionStore';
 import { useCompanyStore } from '../../store/companyStore';
 import { useTransactionStore } from '../../store/transactionStore';
 
@@ -26,39 +26,62 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
   const [itemId, setItemId] = useState('');
   const [type, setType] = useState<MovementType>('in');
   const [quantity, setQuantity] = useState('1');
-  const [price, setPrice] = useState('0,00');
+  const [unitPrice, setUnitPrice] = useState('0,00');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState('');
 
+  // Auto-fill unit price from item when selecting item
+  const handleItemChange = (id: string) => {
+    setItemId(id);
+    const item = items.find((it) => it.id === id);
+    if (item && item.salePriceCents > 0) {
+      setUnitPrice((item.salePriceCents / 100).toFixed(2).replace('.', ','));
+    }
+  };
+
+  // Total = quantity × unitPrice
+  const qty = parseFloat(quantity.replace(',', '.')) || 0;
+  const unitPriceCents = (() => {
+    const v = unitPrice.replace(',', '.').replace(/[^\d.]/g, '');
+    return Math.round(parseFloat(v || '0') * 100);
+  })();
+  const totalCents = qty * unitPriceCents;
+
   useEffect(() => {
     if (!open) return;
-    setItemId(preselectedItemId ?? '');
+    const id = preselectedItemId ?? '';
+    setItemId(id);
     setType('in');
     setQuantity('1');
-    setPrice('0,00');
     setDate(new Date().toISOString().slice(0, 10));
     setDescription('');
+    // Pre-fill price from item
+    const item = items.find((it) => it.id === id);
+    if (item && item.salePriceCents > 0) {
+      const cents = item.salePriceCents;
+      setUnitPrice((cents / 100).toFixed(2).replace('.', ','));
+    } else {
+      setUnitPrice('0,00');
+    }
   }, [open, preselectedItemId]);
 
   const items = company ? getItemsForCompany(company.id) : [];
 
   const handleSave = () => {
     if (!company || !itemId) return;
-    const qty = parseFloat(quantity) || 0;
-    const priceCents = eurToCents(price);
 
     const movement = addMovement({
       companyId: company.id,
       itemId,
       type,
       quantity: qty,
-      priceCents,
+      priceCents: totalCents,
       date,
       description,
     });
 
     if (company.type === 'double') {
-      const total = qty * priceCents;
+      const total = totalCents;
       if (total > 0) {
         if (type === 'in') {
           addJournalEntry({
@@ -106,10 +129,10 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontFamily: "'Inter', sans-serif" }}>
         <div>
           <label style={labelStyle}>{t('warehouse.select_item')}</label>
-          <select style={{ ...inputStyle, cursor: 'pointer' }} value={itemId} onChange={(e) => setItemId(e.target.value)}>
+          <select style={{ ...inputStyle, cursor: 'pointer' }} value={itemId} onChange={(e) => handleItemChange(e.target.value)}>
             <option value="">—</option>
             {items.map((it) => (
-              <option key={it.id} value={it.id}>{it.name} ({it.code})</option>
+              <option key={it.id} value={it.id}>{it.name}{it.code ? ` (${it.code})` : ''}</option>
             ))}
           </select>
         </div>
@@ -135,9 +158,20 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
             <input style={inputStyle} type="text" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
           <div>
-            <label style={labelStyle}>{t('warehouse.movement_price')} €</label>
-            <input style={inputStyle} type="text" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <label style={labelStyle}>{t('warehouse.price_per_unit')} (€)</label>
+            <input style={inputStyle} type="text" inputMode="decimal" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
           </div>
+        </div>
+
+        {/* Total auto-calc */}
+        <div style={{
+          background: dark ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.06)',
+          border: '1px solid rgba(249,115,22,0.25)',
+          borderRadius: 10, padding: '10px 14px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,0.55)' : '#6b7280' }}>{t('warehouse.total_price')}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#f97316' }}>{centsToEur(totalCents)} €</span>
         </div>
 
         <div>

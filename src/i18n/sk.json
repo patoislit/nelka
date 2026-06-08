@@ -205,7 +205,10 @@
     "select_item": "Vybrať položku",
     "movement_type": "Typ pohybu",
     "search_placeholder": "Hľadať podľa názvu alebo kódu...",
-    "no_results": "Žiadne výsledky"
+    "no_results": "Žiadne výsledky",
+    "price": "Cena",
+    "price_per_unit": "Cena za kus",
+    "total_price": "Celková cena"
   },
   "common": {
     "save": "Uložiť", "cancel": "Zrušiť", "delete": "Odstrániť", "edit": "Upraviť",
