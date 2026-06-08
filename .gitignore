@@ -35,3 +35,4 @@ release/
 
 # Supabase
 supabase-schema.sql
+service-account.json
