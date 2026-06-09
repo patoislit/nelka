@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Menu, Sun, Moon, Bell } from 'lucide-react';
+import { Logo } from '../common/Logo';
 import { useThemeStore, useDark } from '../../store/themeStore';
 import { useTranslation } from 'react-i18next';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -73,6 +74,12 @@ export function Header({ onMenuToggle, title }: HeaderProps) {
       >
         <Menu size={17} />
       </button>
+
+      {/* Logo — viditeľné len na mobile (sidebar je schovaný) */}
+      <div className="header-logo-mobile">
+        <Logo size={26} />
+        <span style={{ fontSize: 15, fontWeight: 700, color: dark ? '#fff' : '#0c0c0e', letterSpacing: '-0.02em' }}>nelka</span>
+      </div>
 
       <div style={{ flex: 1 }}>
         {title && (

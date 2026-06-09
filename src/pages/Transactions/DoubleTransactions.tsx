@@ -265,7 +265,7 @@ export function DoubleTransactions({ companyId, userId }: Props) {
   }, [entries]);
 
   return (
-    <div style={{ minHeight: '100%', background: bg, fontFamily: "'Inter', system-ui, sans-serif", padding: '28px 24px' }}>
+    <div className="page-pad-double" style={{ minHeight: '100%', background: bg, fontFamily: "'Inter', system-ui, sans-serif", padding: '28px 24px' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
         <GuideBar id="double-tx-guide" icon={<BookOpen size={15} />}
           title="Podvojné účtovníctvo"
@@ -444,7 +444,7 @@ export function DoubleTransactions({ companyId, userId }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, fontFamily: "'Inter', sans-serif" }}>
 
           {/* ── Hlavička dokladu ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '140px 100px 150px 1fr', gap: 12 }}>
+          <div className="doc-header-grid">
             <div>
               <label style={labelStyle(muted)}>Dátum</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputBase} />
@@ -480,7 +480,8 @@ export function DoubleTransactions({ companyId, userId }: Props) {
           {/* ── Riadky ── */}
           <div>
             {/* Hlavičky stĺpcov */}
-            <div style={{
+            <div className="doc-rows-scroll">
+            <div className="doc-row-headers" style={{
               display: 'grid',
               gridTemplateColumns: '200px 1fr 1fr 130px 1fr 28px',
               gap: 8, paddingBottom: 6, paddingLeft: 2,
@@ -501,7 +502,7 @@ export function DoubleTransactions({ companyId, userId }: Props) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {rows.map((row, idx) => (
-                <div key={row.id} style={{
+                <div key={row.id} className="doc-row-item" style={{
                   display: 'grid',
                   gridTemplateColumns: '200px 1fr 1fr 130px 1fr 28px',
                   gap: 8, alignItems: 'start',
@@ -592,6 +593,8 @@ export function DoubleTransactions({ companyId, userId }: Props) {
                 </div>
               ))}
             </div>
+
+            </div>{/* end doc-rows-scroll */}
 
             {/* Pridať riadok */}
             <button

@@ -122,7 +122,7 @@ export function WarehousePage() {
   };
 
   return (
-    <div style={{ minHeight: '100%', background: bg, padding: '24px 28px', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="page-pad-warehouse" style={{ minHeight: '100%', background: bg, padding: '24px 28px', fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: textMain, margin: 0 }}>{t('warehouse.title')}</h1>
@@ -213,7 +213,7 @@ export function WarehousePage() {
             </div>
           </div>
 
-          <div style={{ background: surface, borderRadius: 16, border: `1px solid ${border}`, overflow: 'hidden' }}>
+          <div className="warehouse-table-scroll" style={{ background: surface, borderRadius: 16, border: `1px solid ${border}`, overflow: 'hidden' }}>
             {items.length === 0 ? (
               <div style={{ padding: '60px 24px', textAlign: 'center' as const }}>
                 <ArrowUpDown size={40} style={{ color: dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb', marginBottom: 12 }} />

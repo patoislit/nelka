@@ -227,6 +227,8 @@ export function InvoiceModal({ open, onClose, invoice }: Props) {
           {/* Items */}
           <SecHead>{t('invoices.items')}</SecHead>
           <div style={{ marginTop: -12 }}>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ minWidth: 480 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 70px 120px 70px 90px 32px', gap: 6, padding: '0 0 6px', borderBottom: `1px solid ${border}` }}>
               {[t('invoices.item_name'), t('invoices.qty'), t('invoices.unit_price'), 'DPH %', t('invoices.item_total'), ''].map((h, i) => (
                 <span key={i} style={{ fontSize: 10, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: i >= 2 ? 'right' : 'left' }}>{h}</span>
@@ -262,6 +264,8 @@ export function InvoiceModal({ open, onClose, invoice }: Props) {
               );
             })}
 
+            </div>{/* end minWidth */}
+            </div>{/* end scroll */}
             <button onClick={addItem} style={{ marginTop: 10, padding: '8px', borderRadius: 8, border: `1px dashed ${dark ? 'rgba(255,255,255,0.15)' : '#d1d5db'}`, cursor: 'pointer', background: 'transparent', color: muted, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', width: '100%' }}>
               {t('invoices.add_item')}
             </button>
@@ -271,7 +275,7 @@ export function InvoiceModal({ open, onClose, invoice }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', borderTop: `1px solid ${border}`, paddingTop: 14 }}>
             <TRow label={t('invoices.subtotal')} value={`${centsToEur(subtotal)} €`} text={text} muted={muted} />
             <TRow label={t('invoices.vat')} value={`${centsToEur(vat)} €`} text={text} muted={muted} />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, borderTop: `1px solid ${border}`, paddingTop: 10, minWidth: 240 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, borderTop: `1px solid ${border}`, paddingTop: 10, minWidth: 240, width: '100%' }}>
               <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: text }}>{t('invoices.total')}</span>
               <span style={{ fontSize: 24, fontWeight: 800, color: '#f97316', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>{centsToEur(total)} €</span>
             </div>
