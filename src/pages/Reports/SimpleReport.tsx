@@ -6,6 +6,7 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { pd } from '../../utils/pdfHelpers';
 import { useDark } from '../../store/themeStore';
 import type { SimpleTransaction } from '../../store/transactionStore';
 import { centsToEur } from '../../store/transactionStore';
@@ -77,23 +78,23 @@ export function SimpleReport({ transactions }: Props) {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(sk ? 'Prehľad transakcií – Nelka' : 'Transaction Report – Nelka', 14, 18);
+    doc.text(pd(sk ? 'Prehlad transakcii - Nelka' : 'Transaction Report - Nelka'), 14, 18);
     doc.setFontSize(10);
-    doc.text(`${sk ? 'Príjmy' : 'Income'}: ${centsToEur(totalIncome)} €  |  ${sk ? 'Výdavky' : 'Expenses'}: ${centsToEur(totalExpense)} €  |  ${sk ? 'Zisk' : 'Profit'}: ${centsToEur(net)} €`, 14, 26);
+    doc.text(pd(`${sk ? 'Prijmy' : 'Income'}: ${centsToEur(totalIncome)} EUR  |  ${sk ? 'Vydavky' : 'Expenses'}: ${centsToEur(totalExpense)} EUR  |  ${sk ? 'Zisk' : 'Profit'}: ${centsToEur(net)} EUR`), 14, 26);
     autoTable(doc, {
       startY: 32,
       head: [[
-        t('transactions.date'),
-        t('transactions.description'),
-        t('transactions.type'),
-        t('transactions.category'),
-        `${t('transactions.amount')} (€)`,
+        pd(t('transactions.date')),
+        pd(t('transactions.description')),
+        pd(t('transactions.type')),
+        pd(t('transactions.category')),
+        pd(`${t('transactions.amount')} (EUR)`),
       ]],
       body: transactions.map((tx) => [
         tx.date,
-        tx.description,
-        t(`transactions.${tx.type}`),
-        t(`transactions.categories.${tx.category}`),
+        pd(tx.description),
+        pd(t(`transactions.${tx.type}`)),
+        pd(t(`transactions.categories.${tx.category}`)),
         (tx.amountCents / 100).toFixed(2),
       ]),
       styles: { fontSize: 8 },

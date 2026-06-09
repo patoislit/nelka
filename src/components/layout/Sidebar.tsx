@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Receipt, BarChart2, Settings, Building2, X, FileText, Package } from 'lucide-react';
+import { LayoutDashboard, Receipt, BarChart2, Settings, Building2, X, FileText, Package, ClipboardList } from 'lucide-react';
 import { useCompanyStore } from '../../store/companyStore';
 import { Logo } from '../common/Logo';
 
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/transactions', Icon: Receipt,          key: 'nav.transactions' },
   { to: '/invoices',     Icon: FileText,         key: 'nav.invoices' },
   { to: '/warehouse',    Icon: Package,          key: 'nav.warehouse' },
+  { to: '/tax',          Icon: ClipboardList,    key: 'nav.tax' },
   { to: '/reports',      Icon: BarChart2,        key: 'nav.reports' },
   { to: '/companies',    Icon: Building2,        key: 'nav.companies' },
   { to: '/settings',     Icon: Settings,         key: 'nav.settings' },

@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { pd } from '../../utils/pdfHelpers';
 import { useDark } from '../../store/themeStore';
 import type { JournalEntry } from '../../store/transactionStore';
 import { centsToEur } from '../../store/transactionStore';
@@ -146,14 +147,14 @@ export function DoubleReport({ entries }: Props) {
   const handleExportBalanceSheetPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text(sk ? 'Súvaha – Nelka' : 'Balance Sheet – Nelka', 14, 18);
+    doc.text(pd(sk ? 'Suvaha - Nelka' : 'Balance Sheet - Nelka'), 14, 18);
     doc.setFontSize(10);
-    doc.text(`${sk ? 'Aktíva celkom' : 'Total Assets'}: ${centsToEur(totalAssets)} €`, 14, 26);
-    doc.text(`${sk ? 'Pasíva + Vlastné imanie' : 'Liabilities + Equity'}: ${centsToEur(totalLiabilities + totalEquity)} €`, 14, 32);
+    doc.text(pd(`${sk ? 'Aktiva celkom' : 'Total Assets'}: ${centsToEur(totalAssets)} EUR`), 14, 26);
+    doc.text(pd(`${sk ? 'Pasiva + Vlastne imanie' : 'Liabilities + Equity'}: ${centsToEur(totalLiabilities + totalEquity)} EUR`), 14, 32);
     autoTable(doc, {
       startY: 38,
-      head: [['Kód', 'Názov', 'MD', 'D', 'Zostatok €']],
-      body: balances.map((b) => [b.code, b.name, (b.debitCents / 100).toFixed(2), (b.creditCents / 100).toFixed(2), (b.balanceCents / 100).toFixed(2)]),
+      head: [['Kod', pd('Nazov'), 'MD', 'D', pd('Zostatok EUR')]],
+      body: balances.map((b) => [b.code, pd(b.name), (b.debitCents / 100).toFixed(2), (b.creditCents / 100).toFixed(2), (b.balanceCents / 100).toFixed(2)]),
       styles: { fontSize: 8 },
     });
     doc.save('nelka-suvaha.pdf');
@@ -162,15 +163,15 @@ export function DoubleReport({ entries }: Props) {
   const handleExportPLPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text(sk ? 'Výsledovka – Nelka' : 'P&L Statement – Nelka', 14, 18);
+    doc.text(pd(sk ? 'Vysledovka - Nelka' : 'P&L Statement - Nelka'), 14, 18);
     doc.setFontSize(10);
-    doc.text(`${t('reports.revenue')}: ${centsToEur(totalRevenues)} €`, 14, 26);
-    doc.text(`${t('reports.expense')}: ${centsToEur(totalExpenses)} €`, 14, 32);
-    doc.text(`${netProfit >= 0 ? t('reports.profit') : t('reports.loss')}: ${centsToEur(Math.abs(netProfit))} €`, 14, 38);
+    doc.text(pd(`${t('reports.revenue')}: ${centsToEur(totalRevenues)} EUR`), 14, 26);
+    doc.text(pd(`${t('reports.expense')}: ${centsToEur(totalExpenses)} EUR`), 14, 32);
+    doc.text(pd(`${netProfit >= 0 ? t('reports.profit') : t('reports.loss')}: ${centsToEur(Math.abs(netProfit))} EUR`), 14, 38);
     autoTable(doc, {
       startY: 44,
-      head: [['Kód', 'Názov', 'MD', 'D', 'Zostatok €']],
-      body: [...revenues, ...expenses].map((b) => [b.code, b.name, (b.debitCents / 100).toFixed(2), (b.creditCents / 100).toFixed(2), (b.balanceCents / 100).toFixed(2)]),
+      head: [['Kod', pd('Nazov'), 'MD', 'D', pd('Zostatok EUR')]],
+      body: [...revenues, ...expenses].map((b) => [b.code, pd(b.name), (b.debitCents / 100).toFixed(2), (b.creditCents / 100).toFixed(2), (b.balanceCents / 100).toFixed(2)]),
       styles: { fontSize: 8 },
     });
     doc.save('nelka-vysledovka.pdf');
@@ -179,11 +180,11 @@ export function DoubleReport({ entries }: Props) {
   const handleExportTrialPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text(sk ? 'Obratová predvaha – Nelka' : 'Trial Balance – Nelka', 14, 18);
+    doc.text(pd(sk ? 'Obratova predvaha - Nelka' : 'Trial Balance - Nelka'), 14, 18);
     autoTable(doc, {
       startY: 26,
-      head: [['Kód', 'Názov', 'MD', 'D', 'Zostatok €']],
-      body: balances.map((b) => [b.code, b.name, (b.debitCents / 100).toFixed(2), (b.creditCents / 100).toFixed(2), (b.balanceCents / 100).toFixed(2)]),
+      head: [['Kod', pd('Nazov'), 'MD', 'D', pd('Zostatok EUR')]],
+      body: balances.map((b) => [b.code, pd(b.name), (b.debitCents / 100).toFixed(2), (b.creditCents / 100).toFixed(2), (b.balanceCents / 100).toFixed(2)]),
       styles: { fontSize: 8 },
     });
     doc.save('nelka-obratova-predvaha.pdf');

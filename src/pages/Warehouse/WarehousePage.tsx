@@ -13,6 +13,7 @@ import { WarehouseItemModal } from './WarehouseItemModal';
 import { MovementModal } from './MovementModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { pd } from '../../utils/pdfHelpers';
 import * as XLSX from 'xlsx';
 
 type Tab = 'items' | 'movements';
@@ -90,13 +91,13 @@ export function WarehousePage() {
   const exportPdf = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(t('warehouse.title') + ' – ' + company.name, 14, 18);
+    doc.text(pd(t('warehouse.title') + ' - ' + company.name), 14, 18);
     doc.setFontSize(10);
-    doc.text(`${t('warehouse.total_value')}: ${centsToEur(totalValue)} €`, 14, 26);
+    doc.text(pd(`${t('warehouse.total_value')}: ${centsToEur(totalValue)} EUR`), 14, 26);
     autoTable(doc, {
       startY: 32,
-      head: [[t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.price')]],
-      body: items.map((it) => [it.code, it.name, it.unit, it.quantity, centsToEur(it.salePriceCents) + ' €']),
+      head: [[pd(t('warehouse.code')), pd(t('warehouse.name')), pd(t('warehouse.unit')), pd(t('warehouse.quantity')), pd(t('warehouse.price'))]],
+      body: items.map((it) => [pd(it.code), pd(it.name), pd(it.unit), it.quantity, centsToEur(it.salePriceCents) + ' EUR']),
       styles: { fontSize: 9 },
     });
     doc.save(`sklad-${company.name}.pdf`);

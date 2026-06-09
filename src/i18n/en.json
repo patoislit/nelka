@@ -71,7 +71,7 @@
     "dashboard": "Overview", "transactions": "Transactions", "journal": "Journal",
     "accounts": "Chart of Accounts", "reports": "Reports",
     "settings": "Settings", "companies": "Companies", "logout": "Sign Out",
-    "invoices": "Invoicing", "warehouse": "Warehouse"
+    "invoices": "Invoicing", "warehouse": "Warehouse", "tax": "Tax Return"
   },
   "transactions": {
     "title": "Transactions", "add": "New transaction",

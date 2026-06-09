@@ -69,7 +69,7 @@
     "dashboard": "Prehľad", "transactions": "Transakcie", "journal": "Denník",
     "accounts": "Účtový rozvrh", "reports": "Výkazy",
     "settings": "Nastavenia", "companies": "Firmy", "logout": "Odhlásiť sa",
-    "invoices": "Fakturácia", "warehouse": "Sklad"
+    "invoices": "Fakturácia", "warehouse": "Sklad", "tax": "Daňové priznanie"
   },
   "transactions": {
     "title": "Transakcie", "add": "Nová transakcia",

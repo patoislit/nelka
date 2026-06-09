@@ -1,13 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
+// Firebase config — tieto hodnoty NIE SÚ tajné, sú súčasťou verejného JS bundle
+// Bezpečnosť je riešená cez Firestore Security Rules
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey:            'AIzaSyBTJpr785xyYjqHjrsNpqN0g9zSl8ahxAQ',
+  authDomain:        'nelka-87b28.firebaseapp.com',
+  projectId:         'nelka-87b28',
+  storageBucket:     'nelka-87b28.firebasestorage.app',
+  messagingSenderId: '289460063694',
+  appId:             '1:289460063694:web:fc269935bdc741521c2f9f',
 };
 
 const app = initializeApp(firebaseConfig);

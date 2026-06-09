@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronRight, BookOpen, Search, Receipt } from 'lucide-react';
-import { TaxReport } from './TaxReport';
+import { Plus, Trash2, ChevronDown, ChevronRight, BookOpen, Search } from 'lucide-react';
 import { HelpBubble } from '../../components/common/HelpBubble';
 import { useTransactionStore, centsToEur, eurToCents } from '../../store/transactionStore';
 import { DEFAULT_ACCOUNTS } from '../../store/chartOfAccountsStore';
@@ -160,7 +159,7 @@ export function DoubleTransactions({ companyId, userId }: Props) {
 
   const entries = getJournalEntries(companyId);
 
-  const [tab, setTab] = useState<ActiveTab | 'tax'>('journal');
+  const [tab, setTab] = useState<ActiveTab>('journal');
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -275,34 +274,25 @@ export function DoubleTransactions({ companyId, userId }: Props) {
         />
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 2, marginBottom: 24, background: dark ? 'rgba(255,255,255,0.06)' : '#f3f4f6', borderRadius: 12, padding: 4, width: 'fit-content', flexWrap: 'wrap' }}>
-          {[
-            { id: 'journal', label: 'Účtovný denník' },
-            { id: 'accounts', label: 'Obratová predvaha' },
-            { id: 'tax', label: 'Daňové priznanie' },
-          ].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as any)} style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
+        <div style={{ display: 'flex', gap: 2, marginBottom: 24, background: dark ? 'rgba(255,255,255,0.06)' : '#f3f4f6', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+          {(['journal', 'accounts'] as ActiveTab[]).map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              padding: '8px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontSize: 13, fontWeight: 500, fontFamily: 'inherit', transition: 'all 0.15s',
-              background: tab === t.id ? (dark ? '#1a1a2e' : '#fff') : 'transparent',
-              color: tab === t.id ? (t.id === 'tax' ? '#f97316' : text) : muted,
-              boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              background: tab === t ? (dark ? '#1a1a2e' : '#fff') : 'transparent',
+              color: tab === t ? text : muted,
+              boxShadow: tab === t ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
             }}>
-              {t.id === 'tax' && <Receipt size={13} />}
-              {t.id === 'accounts'
-                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                    {t.label}
+              {t === 'journal'
+                ? 'Účtovný denník'
+                : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    Obratová predvaha
                     <HelpBubble position="bottom" text="Prehľad všetkých použitých účtov s celkovými obratmi na strane MD (prírastky) a D (úbytky). Zostatok = MD mínus D. Slúži na rýchlu kontrolu správnosti účtovania." />
                   </span>
-                : t.label
               }
             </button>
           ))}
         </div>
-
-        {/* Daňové priznanie tab */}
-        {tab === 'tax' && <TaxReport companyId={companyId} mode="double" />}
 
         {/* ── DENNÍK ── */}
         {tab === 'journal' && (

@@ -17,6 +17,7 @@ import { TransactionsPage } from './pages/Transactions/TransactionsPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { InvoicesPage } from './pages/Invoices/InvoicesPage';
 import { WarehousePage } from './pages/Warehouse/WarehousePage';
+import { TaxPage } from './pages/Tax/TaxPage';
 
 function ThemeProvider({ children }: { children: React.ReactNode }) {
   const dark = useDark();
@@ -120,6 +121,7 @@ function AppLoader() {
           <Route path="/settings"     element={<SettingsPage />} />
           <Route path="/invoices"     element={<InvoicesPage />} />
           <Route path="/warehouse"    element={<WarehousePage />} />
+          <Route path="/tax"          element={<TaxPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
