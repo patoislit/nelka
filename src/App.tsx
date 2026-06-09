@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useDark, useThemeStore } from './store/themeStore';
 import { useCompanyStore } from './store/companyStore';
 import { useTransactionStore } from './store/transactionStore';
@@ -17,10 +17,6 @@ import { TransactionsPage } from './pages/Transactions/TransactionsPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { InvoicesPage } from './pages/Invoices/InvoicesPage';
 import { WarehousePage } from './pages/Warehouse/WarehousePage';
-
-// Electron používa file:// protokol — HashRouter je potrebný
-const isElectron = typeof window !== 'undefined' && window.navigator.userAgent.includes('Electron');
-const Router = isElectron ? HashRouter : BrowserRouter;
 
 function ThemeProvider({ children }: { children: React.ReactNode }) {
   const dark = useDark();
@@ -112,7 +108,7 @@ function AppLoader() {
   }
 
   return (
-    <Router>
+    <HashRouter>
       <Routes>
         <Route path="/"          element={<WelcomePage />} />
         <Route path="/companies" element={<CompaniesPage />} />
@@ -128,7 +124,7 @@ function AppLoader() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+    </HashRouter>
   );
 }
 
