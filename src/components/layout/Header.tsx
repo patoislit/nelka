@@ -77,7 +77,7 @@ export function Header({ onMenuToggle, title }: HeaderProps) {
 
       {/* Logo — viditeľné len na mobile (sidebar je schovaný) */}
       <div className="header-logo-mobile">
-        <Logo size={26} />
+        <Logo variant="mark" size={26} />
         <span style={{ fontSize: 15, fontWeight: 700, color: dark ? '#fff' : '#0c0c0e', letterSpacing: '-0.02em' }}>nelka</span>
       </div>
 
