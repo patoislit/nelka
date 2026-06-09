@@ -229,8 +229,8 @@ export function WarehousePage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${border}` }}>
-                    {[t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.price'), ''].map((h, i) => (
-                      <th key={i} style={{ padding: '12px 16px', textAlign: i < 4 ? 'left' as const : 'right' as const, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{h}</th>
+                    {[t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.price'), t('warehouse.value'), ''].map((h, i) => (
+                      <th key={i} style={{ padding: '12px 16px', textAlign: i < 5 ? 'left' as const : 'right' as const, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -246,6 +246,7 @@ export function WarehousePage() {
                       <td style={{ padding: '11px 16px', fontSize: 13, color: textMuted }}>{item.unit}</td>
                       <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: textMain }}>{item.quantity}</td>
                       <td style={{ padding: '11px 16px', fontSize: 13, color: '#f97316', fontWeight: 600 }}>{centsToEur(item.salePriceCents)} €</td>
+                      <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: textMain }}>{centsToEur(item.quantity * item.salePriceCents)} €</td>
                       <td style={{ padding: '11px 16px' }}>
                         <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end' }}>
                           <button onClick={() => openEditItem(item)} title={t('common.edit')} style={iconBtnStyle(dark)}>

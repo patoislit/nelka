@@ -39,7 +39,7 @@
     "greeting_evening": "Dobrý večer",
     "stat_income": "Príjmy",
     "stat_expense": "Výdavky",
-    "stat_balance": "Zostatok",
+    "stat_balance": "Zisk",
     "stat_entries": "Zápisov",
     "stat_transactions": "Transakcií",
     "stat_this_month": "tento mesiac",
@@ -207,6 +207,7 @@
     "search_placeholder": "Hľadať podľa názvu alebo kódu...",
     "no_results": "Žiadne výsledky",
     "price": "Cena",
+    "value": "Hodnota",
     "price_per_unit": "Cena za kus",
     "total_price": "Celková cena"
   },

@@ -1,20 +1,23 @@
 const { app, BrowserWindow, shell, Menu } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
+const isMac = process.platform === 'darwin';
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 900,
+    minWidth: 960,
     minHeight: 600,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    // Mac: skryté tlačidlá, Windows: default frame
+    titleBarStyle: isMac ? 'hiddenInset' : 'default',
     backgroundColor: '#0c0c0e',
     icon: path.join(__dirname, '../public/icons/icon-512.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false, // potrebné pre file:// protokol
     },
     show: false,
   });
@@ -22,63 +25,81 @@ function createWindow() {
   // Load app
   if (isDev) {
     win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools();
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    win.loadFile(indexPath).catch((err) => {
+      console.error('Failed to load:', indexPath, err);
+    });
   }
 
-  // Show window when ready (prevents white flash)
-  win.once('ready-to-show', () => win.show());
+  // Zobraz okno keď je pripravené (bez bieleho/čierneho bliknutia)
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
+  });
 
-  // Open external links in default browser
+  // Fallback — ak ready-to-show nespustí do 3 sekúnd, zobraz aj tak
+  setTimeout(() => {
+    if (!win.isVisible()) win.show();
+  }, 3000);
+
+  // Ak načítanie zlyhá — skús znova
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('did-fail-load:', errorCode, errorDescription);
+    if (!isDev) {
+      setTimeout(() => {
+        win.loadFile(path.join(__dirname, '../dist/index.html'));
+      }, 1000);
+    }
+  });
+
+  // Externé linky otvor v prehliadači
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) shell.openExternal(url);
     return { action: 'deny' };
   });
 }
 
-// Custom menu
 function buildMenu() {
-  const isMac = process.platform === 'darwin';
+  if (!isMac) {
+    // Windows / Linux — žiadne menu
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
+  // Mac — minimálne menu (povinné pre Mac UX)
   const template = [
-    ...(isMac ? [{ label: app.name, submenu: [
-      { role: 'about' },
-      { type: 'separator' },
-      { role: 'services' },
-      { type: 'separator' },
-      { role: 'hide' },
-      { role: 'hideOthers' },
-      { role: 'unhide' },
-      { type: 'separator' },
-      { role: 'quit' },
-    ]}] : []),
-    { label: 'Súbor', submenu: [
-      isMac ? { role: 'close' } : { role: 'quit', label: 'Zavrieť' },
-    ]},
-    { label: 'Úpravy', submenu: [
-      { role: 'undo', label: 'Späť' },
-      { role: 'redo', label: 'Znovu' },
-      { type: 'separator' },
-      { role: 'cut', label: 'Vystrihnúť' },
-      { role: 'copy', label: 'Kopírovať' },
-      { role: 'paste', label: 'Vložiť' },
-      { role: 'selectAll', label: 'Vybrať všetko' },
-    ]},
-    { label: 'Zobraziť', submenu: [
-      { role: 'reload', label: 'Obnoviť' },
-      { type: 'separator' },
-      { role: 'resetZoom', label: 'Pôvodná veľkosť' },
-      { role: 'zoomIn', label: 'Priblížiť' },
-      { role: 'zoomOut', label: 'Oddialiť' },
-      { type: 'separator' },
-      { role: 'togglefullscreen', label: 'Celá obrazovka' },
-    ]},
-    { label: 'Okno', submenu: [
-      { role: 'minimize', label: 'Minimalizovať' },
-      { role: 'zoom' },
-      ...(isMac ? [{ type: 'separator' }, { role: 'front' }] : []),
-    ]},
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about', label: 'O aplikácii Nelka' },
+        { type: 'separator' },
+        { role: 'hide', label: 'Skryť Nelka' },
+        { role: 'hideOthers', label: 'Skryť ostatné' },
+        { type: 'separator' },
+        { role: 'quit', label: 'Ukončiť Nelka' },
+      ],
+    },
+    {
+      label: 'Úpravy',
+      submenu: [
+        { role: 'undo', label: 'Späť' },
+        { role: 'redo', label: 'Znovu' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Vystrihnúť' },
+        { role: 'copy', label: 'Kopírovať' },
+        { role: 'paste', label: 'Vložiť' },
+        { role: 'selectAll', label: 'Vybrať všetko' },
+      ],
+    },
+    {
+      label: 'Zobraziť',
+      submenu: [
+        { role: 'togglefullscreen', label: 'Celá obrazovka' },
+      ],
+    },
   ];
+
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
@@ -92,5 +113,5 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (!isMac) app.quit();
 });

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Electron používa file:// protokol — HashRouter je potrebný
+const isElectron = typeof window !== 'undefined' && window.navigator.userAgent.includes('Electron');
+const Router = isElectron ? HashRouter : BrowserRouter;
 import { useDark, useThemeStore } from './store/themeStore';
 import { useCompanyStore } from './store/companyStore';
 import { useTransactionStore } from './store/transactionStore';
@@ -108,7 +112,7 @@ function AppLoader() {
   }
 
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/"          element={<WelcomePage />} />
         <Route path="/companies" element={<CompaniesPage />} />
@@ -124,7 +128,7 @@ function AppLoader() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

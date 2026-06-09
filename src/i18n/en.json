@@ -41,7 +41,7 @@
     "greeting_evening": "Good evening",
     "stat_income": "Income",
     "stat_expense": "Expenses",
-    "stat_balance": "Balance",
+    "stat_balance": "Profit",
     "stat_entries": "Entries",
     "stat_transactions": "Transactions",
     "stat_this_month": "this month",
@@ -209,6 +209,7 @@
     "search_placeholder": "Search by name or code...",
     "no_results": "No results found",
     "price": "Price",
+    "value": "Value",
     "price_per_unit": "Unit price",
     "total_price": "Total price"
   },

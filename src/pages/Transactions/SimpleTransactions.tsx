@@ -78,7 +78,7 @@ export function SimpleTransactions({ companyId }: Props) {
           {[
             { label: 'Príjmy', value: totalIncome, color: '#10b981', bg: dark ? 'rgba(16,185,129,0.1)' : '#ecfdf5', icon: <TrendingUp size={18} color="#10b981" /> },
             { label: 'Výdavky', value: totalExpense, color: '#ef4444', bg: dark ? 'rgba(239,68,68,0.1)' : '#fef2f2', icon: <TrendingDown size={18} color="#ef4444" /> },
-            { label: 'Zostatok', value: balance, color: balance >= 0 ? '#f97316' : '#ef4444', bg: dark ? 'rgba(249,115,22,0.1)' : '#fff7ed', icon: null },
+            { label: t('dashboard.stat_balance'), value: balance, color: balance >= 0 ? '#f97316' : '#ef4444', bg: dark ? 'rgba(249,115,22,0.1)' : '#fff7ed', icon: null },
           ].map((s) => (
             <div key={s.label} style={{
               padding: '20px 22px', borderRadius: 18,

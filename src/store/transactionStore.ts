@@ -21,6 +21,7 @@ export interface JournalEntry {
   id: string; companyId: string; entryNo: number;
   date: string; description: string; lines: JournalLine[];
   createdAt: string; createdBy: string;
+  docType?: string; docNo?: string;
 }
 
 interface TransactionStore {
@@ -57,7 +58,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
           .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, date: r.date, description: r.description, type: r.type, category: r.category, amountCents: r.amountCents, note: r.note, createdAt: r.createdAt }; })
           .sort((a, b) => b.date.localeCompare(a.date)),
         journalEntries: entriesSnap.docs
-          .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, entryNo: r.entryNo, date: r.date, description: r.description, lines: r.lines ?? [], createdAt: r.createdAt, createdBy: r.createdBy ?? '' }; })
+          .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, entryNo: r.entryNo, date: r.date, description: r.description, lines: r.lines ?? [], createdAt: r.createdAt, createdBy: r.createdBy ?? '', docType: r.docType ?? '', docNo: r.docNo ?? '' }; })
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       });
   },
@@ -85,7 +86,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     const entryNo = get().journalEntries.filter((e) => e.companyId === entry.companyId).length + 1;
     const je: JournalEntry = { ...entry, id: crypto.randomUUID(), entryNo, createdAt: new Date().toISOString() };
     set((s) => ({ journalEntries: [je, ...s.journalEntries] }));
-    setDoc(doc(db, 'journal_entries', je.id), { userId, companyId: je.companyId, entryNo: je.entryNo, date: je.date, description: je.description, lines: je.lines, createdBy: je.createdBy, createdAt: je.createdAt })
+    setDoc(doc(db, 'journal_entries', je.id), { userId, companyId: je.companyId, entryNo: je.entryNo, date: je.date, description: je.description, lines: je.lines, createdBy: je.createdBy, createdAt: je.createdAt, docType: je.docType ?? '', docNo: je.docNo ?? '' })
       .catch((e) => console.error('je add:', e));
     return je;
   },

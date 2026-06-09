@@ -75,6 +75,11 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
   addMovement(data) {
     const userId = getLocalUserId();
     const movement: StockMovement = { ...data, id: crypto.randomUUID() };
+    // unit price = total / quantity
+    const newUnitPriceCents = data.quantity > 0 && data.priceCents > 0
+      ? Math.round(data.priceCents / data.quantity)
+      : 0;
+
     set((s) => {
       const items = s.items.map((it) => {
         if (it.id !== data.itemId) return it;
@@ -82,14 +87,18 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
         if (data.type === 'in')       qty += data.quantity;
         else if (data.type === 'out') qty -= data.quantity;
         else                          qty  = data.quantity;
-        return { ...it, quantity: qty };
+        const salePriceCents = newUnitPriceCents > 0 ? newUnitPriceCents : it.salePriceCents;
+        return { ...it, quantity: qty, salePriceCents };
       });
       return { items, movements: [movement, ...s.movements] };
     });
-    const updatedQty = get().items.find((it) => it.id === data.itemId)?.quantity;
-    if (updatedQty !== undefined)
-      updateDoc(doc(db, 'warehouse_items', data.itemId), { quantity: updatedQty })
+    const updatedItem = get().items.find((it) => it.id === data.itemId);
+    if (updatedItem) {
+      const patch: Record<string, unknown> = { quantity: updatedItem.quantity };
+      if (newUnitPriceCents > 0) patch.salePriceCents = updatedItem.salePriceCents;
+      updateDoc(doc(db, 'warehouse_items', data.itemId), patch)
         .catch((e) => console.error('qty update:', e));
+    }
     setDoc(doc(db, 'stock_movements', movement.id), { userId, ...movement })
       .catch((e) => console.error('movement add:', e));
     return movement;

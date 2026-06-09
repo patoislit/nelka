@@ -79,7 +79,7 @@ export function SimpleReport({ transactions }: Props) {
     doc.setFontSize(16);
     doc.text(sk ? 'Prehľad transakcií – Nelka' : 'Transaction Report – Nelka', 14, 18);
     doc.setFontSize(10);
-    doc.text(`${sk ? 'Príjmy' : 'Income'}: ${centsToEur(totalIncome)} €  |  ${sk ? 'Výdavky' : 'Expenses'}: ${centsToEur(totalExpense)} €  |  ${sk ? 'Zostatok' : 'Net'}: ${centsToEur(net)} €`, 14, 26);
+    doc.text(`${sk ? 'Príjmy' : 'Income'}: ${centsToEur(totalIncome)} €  |  ${sk ? 'Výdavky' : 'Expenses'}: ${centsToEur(totalExpense)} €  |  ${sk ? 'Zisk' : 'Profit'}: ${centsToEur(net)} €`, 14, 26);
     autoTable(doc, {
       startY: 32,
       head: [[

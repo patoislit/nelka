@@ -7,10 +7,10 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-const maxWidths = { sm: 440, md: 540, lg: 700 };
+const maxWidths = { sm: 440, md: 540, lg: 700, xl: 900 };
 
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
   const dark = useDark();
