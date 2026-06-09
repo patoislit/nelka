@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, TrendingUp, TrendingDown, Calendar, Tag, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, TrendingDown, Calendar, Tag, HelpCircle, Receipt } from 'lucide-react';
+import { TaxReport } from './TaxReport';
 import { GuideBar } from '../../components/common/GuideBar';
 import { useTransactionStore, centsToEur, eurToCents } from '../../store/transactionStore';
 import type { SimpleCategory } from '../../store/transactionStore';
@@ -62,9 +63,55 @@ export function SimpleTransactions({ companyId }: Props) {
 
   const catList = type === 'income' ? INCOME_CATS : EXPENSE_CATS;
 
+  const [mainTab, setMainTab] = useState<'transactions' | 'tax'>('transactions');
+
+  if (mainTab === 'tax') {
+    return (
+      <div style={{ minHeight: '100%', background: bg, fontFamily: "'Inter', system-ui, sans-serif" }}>
+        {/* Tab lišta */}
+        <div style={{ display: 'flex', gap: 2, padding: '16px 24px 0', background: bg }}>
+          {[
+            { id: 'transactions', label: 'Transakcie' },
+            { id: 'tax', label: 'Daňové priznanie', icon: <Receipt size={13} /> },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setMainTab(tab.id as any)} style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '8px 16px', borderRadius: '10px 10px 0 0', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 600, fontFamily: 'inherit', transition: 'all 0.15s',
+              background: mainTab === tab.id ? (dark ? '#111113' : '#fff') : 'transparent',
+              color: mainTab === tab.id ? '#f97316' : (dark ? 'rgba(255,255,255,0.4)' : '#9ca3af'),
+              borderBottom: mainTab === tab.id ? `2px solid #f97316` : '2px solid transparent',
+            }}>
+              {tab.icon}{tab.label}
+            </button>
+          ))}
+        </div>
+        <TaxReport companyId={companyId} mode="simple" />
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100%', background: bg, fontFamily: "'Inter', system-ui, sans-serif", padding: '28px 24px' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        {/* Tab lišta */}
+        <div style={{ display: 'flex', gap: 2, marginBottom: 20 }}>
+          {[
+            { id: 'transactions', label: 'Transakcie' },
+            { id: 'tax', label: 'Daňové priznanie', icon: <Receipt size={13} /> },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setMainTab(tab.id as any)} style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 600, fontFamily: 'inherit', transition: 'all 0.15s',
+              background: mainTab === tab.id ? '#f97316' : (dark ? 'rgba(255,255,255,0.06)' : '#f3f4f6'),
+              color: mainTab === tab.id ? '#fff' : (dark ? 'rgba(255,255,255,0.4)' : '#9ca3af'),
+            }}>
+              {tab.icon}{tab.label}
+            </button>
+          ))}
+        </div>
+
         <GuideBar
           id="simple-tx-guide"
           icon={<HelpCircle size={15} />}
