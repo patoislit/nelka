@@ -1,6 +1,6 @@
 const { app, BrowserWindow, shell, Menu } = require('electron');
 const path = require('path');
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_DEV === '1';
 const isMac = process.platform === 'darwin';
 
 function createWindow() {
@@ -36,6 +36,7 @@ function createWindow() {
   win.once('ready-to-show', () => {
     win.show();
     win.focus();
+    if (isDev) win.webContents.openDevTools();
   });
 
   // Fallback — ak ready-to-show nespustí do 3 sekúnd, zobraz aj tak
