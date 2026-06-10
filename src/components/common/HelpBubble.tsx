@@ -68,15 +68,17 @@ export function HelpBubble({ text, position = 'top' }: Props) {
         onClick={openBubble}
         aria-label="Informácia"
         style={{
-          width: 18, height: 18,
+          width: 18, height: 18, minWidth: 18, minHeight: 18,
           borderRadius: '50%',
           border: `1.5px solid ${iconBorder}`,
           background: iconBg,
           color: iconColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', flexShrink: 0, padding: 0,
+          boxSizing: 'content-box',
           transition: 'border-color 0.15s, background 0.15s, color 0.15s',
           outline: 'none',
+          aspectRatio: '1 / 1',
         }}
       >
         {/* Inline SVG info icon */}
