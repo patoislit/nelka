@@ -38,16 +38,12 @@ function createWindow() {
   win.once('ready-to-show', () => {
     win.show();
     win.focus();
-    // DevTools vždy zapnuté — dočasne pre diagnostiku
-    win.webContents.openDevTools();
+    if (isDev) win.webContents.openDevTools();
   });
 
   // Fallback — ak ready-to-show nespustí do 5 sekúnd, zobraz aj tak
   setTimeout(() => {
-    if (!win.isVisible()) {
-      win.show();
-      win.webContents.openDevTools();
-    }
+    if (!win.isVisible()) win.show();
   }, 5000);
 
   // Ak načítanie zlyhá — zaznamenaj chybu, NEskúšaj znova (retry loop môže spôsobiť problém)
