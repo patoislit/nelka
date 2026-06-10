@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Sun, Moon, Bell } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, Search } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useThemeStore, useDark } from '../../store/themeStore';
 import { useTranslation } from 'react-i18next';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useCompanyStore } from '../../store/companyStore';
 
-interface HeaderProps { onMenuToggle: () => void; title?: string; }
+interface HeaderProps { onMenuToggle: () => void; title?: string; onSearch?: () => void; }
 
-export function Header({ onMenuToggle, title }: HeaderProps) {
+export function Header({ onMenuToggle, title, onSearch }: HeaderProps) {
   const setMode = useThemeStore((s) => s.setMode);
   const { t, i18n } = useTranslation();
   const dark = useDark();
@@ -88,6 +88,31 @@ export function Header({ onMenuToggle, title }: HeaderProps) {
           </h1>
         )}
       </div>
+
+      {/* Search / Command palette */}
+      <button
+        onClick={onSearch}
+        title="Hľadaj (Ctrl+K)"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '6px 12px', borderRadius: 10,
+          background: dark ? 'rgba(255,255,255,0.06)' : '#f3f4f6',
+          border: `1px solid ${dark ? 'rgba(255,255,255,0.09)' : '#e5e7eb'}`,
+          cursor: 'pointer', color: dark ? 'rgba(255,255,255,0.38)' : '#9ca3af',
+          fontSize: 12, fontFamily: 'inherit', transition: 'all 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.color = '#f97316'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = dark ? 'rgba(255,255,255,0.09)' : '#e5e7eb'; e.currentTarget.style.color = dark ? 'rgba(255,255,255,0.38)' : '#9ca3af'; }}
+      >
+        <Search size={13} />
+        <span className="hidden sm:inline">Hľadaj…</span>
+        <kbd style={{
+          fontSize: 10, padding: '1px 5px', borderRadius: 4,
+          background: dark ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
+          color: dark ? 'rgba(255,255,255,0.3)' : '#9ca3af',
+          border: 'none',
+        }} className="hidden md:inline">Ctrl+K</kbd>
+      </button>
 
       {/* Bell icon */}
       <div ref={bellRef} style={{ position: 'relative' }}>
