@@ -92,7 +92,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
             </button>
           </div>
         )}
-        <div style={{ padding: '20px 24px 32px', overflowY: 'auto', flex: 1 }}>
+        <div className="modal-body" style={{ padding: '20px 24px 32px', overflowY: 'auto', flex: 1 }}>
           {children}
         </div>
       </div>
@@ -107,6 +107,11 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
             left: 50% !important;
             transform: translate(-50%,-50%) !important;
             bottom: auto !important;
+          }
+        }
+        @media (max-width: 639px) {
+          .modal-body {
+            padding: 16px 16px 40px !important;
           }
         }
       `}</style>
