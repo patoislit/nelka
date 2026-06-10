@@ -214,7 +214,7 @@ export function WarehousePage() {
             </div>
           </div>
 
-          <div className="warehouse-table-scroll" style={{ background: surface, borderRadius: 16, border: `1px solid ${border}`, overflow: 'hidden' }}>
+          <div className="warehouse-table-scroll" style={{ background: surface, borderRadius: 16, border: `1px solid ${border}` }}>
             {items.length === 0 ? (
               <div style={{ padding: '60px 24px', textAlign: 'center' as const }}>
                 <ArrowUpDown size={40} style={{ color: dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb', marginBottom: 12 }} />
@@ -272,7 +272,7 @@ export function WarehousePage() {
 
       {/* Movements tab */}
       {tab === 'movements' && (
-        <div style={{ background: surface, borderRadius: 16, border: `1px solid ${border}`, overflow: 'hidden' }}>
+        <div className="warehouse-table-scroll" style={{ background: surface, borderRadius: 16, border: `1px solid ${border}` }}>
           {movements.length === 0 ? (
             <div style={{ padding: '60px 24px', textAlign: 'center' as const }}>
               <ArrowUpDown size={40} style={{ color: dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb', marginBottom: 12 }} />
