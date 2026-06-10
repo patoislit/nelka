@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, TrendingUp, TrendingDown, Calendar, Tag, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, TrendingDown, Calendar, Tag, HelpCircle, Upload } from 'lucide-react';
 import { GuideBar } from '../../components/common/GuideBar';
 import { useTransactionStore, centsToEur, eurToCents } from '../../store/transactionStore';
 import type { SimpleCategory } from '../../store/transactionStore';
 import { useDark } from '../../store/themeStore';
 import { Modal } from '../../components/common/Modal';
 import { Button } from '../../components/common/Button';
+import { BankImportModal } from './BankImportModal';
 
 const INCOME_CATS: SimpleCategory[] = ['sales', 'services', 'other_income'];
 const EXPENSE_CATS: SimpleCategory[] = ['supplies', 'rent', 'utilities', 'salaries', 'marketing', 'other'];
@@ -20,6 +21,7 @@ export function SimpleTransactions({ companyId }: Props) {
   const transactions = getSimple(companyId);
 
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [desc, setDesc] = useState('');
@@ -124,6 +126,18 @@ export function SimpleTransactions({ companyId }: Props) {
           >
             <Plus size={15} /> Pridať výdavok
           </button>
+          <button
+            onClick={() => setImportOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px', borderRadius: 12, cursor: 'pointer',
+              background: 'transparent', color: '#f97316', fontSize: 13, fontWeight: 600,
+              fontFamily: 'inherit',
+              border: '1.5px solid rgba(249,115,22,0.4)',
+            }}
+          >
+            <Upload size={15} /> Importovať z banky
+          </button>
         </div>
 
         {/* Table / empty */}
@@ -194,6 +208,9 @@ export function SimpleTransactions({ companyId }: Props) {
           </div>
         )}
       </div>
+
+      {/* Bank import modal */}
+      <BankImportModal open={importOpen} onClose={() => setImportOpen(false)} companyId={companyId} />
 
       {/* Premium modal */}
       <Modal open={open} onClose={() => setOpen(false)} title={type === 'income' ? 'Nový príjem' : 'Nový výdavok'} size="md">
