@@ -15,6 +15,14 @@ export interface Company {
   type: AccountingType;
   createdAt: string;
   ownerId: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  email?: string;
+  phone?: string;
+  iban?: string;
+  bank?: string;
+  logoDataUrl?: string;
 }
 
 interface CompanyStore {
@@ -44,7 +52,11 @@ export const useCompanyStore = create<CompanyStore>()(
         set({
           companies: docs.map((d) => {
             const r = d.data();
-            return { id: d.id, name: r.name, ico: r.ico, dic: r.dic, type: r.type, createdAt: r.createdAt, ownerId: r.userId };
+            return {
+              id: d.id, name: r.name, ico: r.ico, dic: r.dic, type: r.type, createdAt: r.createdAt, ownerId: r.userId,
+              address: r.address, city: r.city, zip: r.zip, email: r.email, phone: r.phone,
+              iban: r.iban, bank: r.bank, logoDataUrl: r.logoDataUrl,
+            };
           }),
         });
       },
@@ -55,7 +67,12 @@ export const useCompanyStore = create<CompanyStore>()(
         const userId = getLocalUserId();
         const company: Company = { ...data, ownerId: userId, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
         set((s) => ({ companies: [...s.companies, company] }));
-        setDoc(doc(db, COL, company.id), { userId, name: company.name, ico: company.ico, dic: company.dic, type: company.type, createdAt: company.createdAt })
+        setDoc(doc(db, COL, company.id), {
+          userId, name: company.name, ico: company.ico, dic: company.dic, type: company.type, createdAt: company.createdAt,
+          address: company.address ?? null, city: company.city ?? null, zip: company.zip ?? null,
+          email: company.email ?? null, phone: company.phone ?? null, iban: company.iban ?? null,
+          bank: company.bank ?? null, logoDataUrl: company.logoDataUrl ?? null,
+        })
           .catch((e) => console.error('company add:', e));
         return company;
       },
@@ -63,10 +80,18 @@ export const useCompanyStore = create<CompanyStore>()(
       updateCompany: (id, data) => {
         set((s) => ({ companies: s.companies.map((c) => c.id === id ? { ...c, ...data } : c) }));
         const patch: Record<string, unknown> = {};
-        if (data.name !== undefined) patch.name = data.name;
-        if (data.ico  !== undefined) patch.ico  = data.ico;
-        if (data.dic  !== undefined) patch.dic  = data.dic;
-        if (data.type !== undefined) patch.type = data.type;
+        if (data.name    !== undefined) patch.name    = data.name;
+        if (data.ico     !== undefined) patch.ico     = data.ico;
+        if (data.dic     !== undefined) patch.dic     = data.dic;
+        if (data.type    !== undefined) patch.type    = data.type;
+        if (data.address !== undefined) patch.address = data.address;
+        if (data.city    !== undefined) patch.city    = data.city;
+        if (data.zip     !== undefined) patch.zip     = data.zip;
+        if (data.email   !== undefined) patch.email   = data.email;
+        if (data.phone   !== undefined) patch.phone   = data.phone;
+        if (data.iban    !== undefined) patch.iban    = data.iban;
+        if (data.bank    !== undefined) patch.bank    = data.bank;
+        if (data.logoDataUrl !== undefined) patch.logoDataUrl = data.logoDataUrl;
         updateDoc(doc(db, COL, id), patch).catch((e) => console.error('company update:', e));
       },
 

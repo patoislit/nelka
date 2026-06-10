@@ -3,118 +3,174 @@ import autoTable from 'jspdf-autotable';
 import type { Invoice } from '../../store/invoiceStore';
 import { calcInvoiceSubtotalCents, calcInvoiceTotalCents } from '../../store/invoiceStore';
 import { centsToEur } from '../../store/transactionStore';
+import type { Company } from '../../store/companyStore';
+import { pd } from '../../utils/pdfHelpers';
 
-const ORANGE  = [249, 115, 22]  as [number, number, number];
-const DARK    = [15,  15,  20]  as [number, number, number];
-const GRAY    = [100, 100, 110] as [number, number, number];
-const LGRAY   = [240, 240, 245] as [number, number, number];
-const WHITE   = [255, 255, 255] as [number, number, number];
+const ORANGE = [249, 115, 22]  as [number, number, number];
+const DARK   = [12,  12,  14]  as [number, number, number];
+const GRAY   = [120, 120, 130] as [number, number, number];
+const LGRAY  = [246, 247, 249] as [number, number, number];
+const WHITE  = [255, 255, 255] as [number, number, number];
 
-function eur(cents: number) { return centsToEur(cents) + ' €'; }
+function eur(cents: number) { return centsToEur(cents) + ' EUR'; }
 
-export function exportInvoicePdf(invoice: Invoice, companyName: string, lang: string): void {
-  const doc   = new jsPDF({ unit: 'mm', format: 'a4' });
-  const sk    = lang === 'sk';
-  const W     = 210;
-  const PAD   = 14;
+export function exportInvoicePdf(invoice: Invoice, company: Company, lang: string): void {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const sk  = lang === 'sk';
+  const W   = 210;
+  const H   = 297;
+  const PAD = 14;
 
-  /* ── HEADER BAR ─────────────────────────────────────────────────────── */
-  doc.setFillColor(...ORANGE);
-  doc.rect(0, 0, W, 28, 'F');
+  /* ── COMPANY LOGO (top-left) ──────────────────────────────────────── */
+  let logoEndY = PAD;
+  if (company.logoDataUrl) {
+    try {
+      doc.addImage(company.logoDataUrl, 'PNG', PAD, PAD, 28, 28);
+      logoEndY = PAD + 30;
+    } catch (_) { /* ignore invalid image */ }
+  }
 
-  // Company name
+  /* ── SUPPLIER INFO (top-left) ─────────────────────────────────────── */
+  const suppX = company.logoDataUrl ? PAD + 32 : PAD;
+  let sy = PAD + 4;
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(...WHITE);
-  doc.text(companyName, PAD, 12);
+  doc.setFontSize(13);
+  doc.setTextColor(...DARK);
+  doc.text(pd(company.name), suppX, sy);
+  sy += 6;
 
-  // "FAKTÚRA" label
-  doc.setFontSize(20);
-  doc.text(sk ? 'FAKTURA' : 'INVOICE', W - PAD, 12, { align: 'right' });
-
-  // Invoice number small
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`c. ${invoice.number}`, W - PAD, 20, { align: 'right' });
+  doc.setFontSize(8.5);
+  doc.setTextColor(...GRAY);
 
-  /* ── META ROW ────────────────────────────────────────────────────────── */
-  let y = 36;
-  const metaItems = [
-    { label: sk ? 'Datum vystavenia' : 'Issue date', value: invoice.issueDate },
-    { label: sk ? 'Datum splatnosti' : 'Due date',   value: invoice.dueDate   },
-    { label: sk ? 'Stav' : 'Status',
-      value: sk
-        ? { draft: 'Koncept', sent: 'Odoslana', paid: 'Zaplatena', overdue: 'Po splatnosti', cancelled: 'Stornovana' }[invoice.status] ?? invoice.status
-        : invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)
-    },
-  ];
-  const colW = (W - 2 * PAD) / metaItems.length;
-  doc.setFillColor(...LGRAY);
-  doc.rect(PAD, y - 5, W - 2 * PAD, 14, 'F');
-  metaItems.forEach((m, i) => {
-    const x = PAD + i * colW + 4;
+  if (company.address) { doc.text(pd(company.address), suppX, sy); sy += 5; }
+  if (company.city || company.zip) {
+    const line = [company.zip, company.city].filter(Boolean).join(' ');
+    doc.text(pd(line), suppX, sy); sy += 5;
+  }
+  if (company.ico) { doc.text(`ICO: ${company.ico}`, suppX, sy); sy += 5; }
+  if (company.dic) { doc.text(`DIC: ${company.dic}`, suppX, sy); sy += 5; }
+  if (company.email) { doc.text(pd(company.email), suppX, sy); sy += 5; }
+  if (company.phone) { doc.text(pd(company.phone), suppX, sy); sy += 5; }
+
+  /* ── INVOICE HEADER (top-right) ───────────────────────────────────── */
+  const rightX = W - PAD;
+  let hy = PAD + 4;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(24);
+  doc.setTextColor(...ORANGE);
+  doc.text(sk ? 'FAKTURA' : 'INVOICE', rightX, hy, { align: 'right' });
+  hy += 10;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...DARK);
+  doc.text(pd(invoice.number), rightX, hy, { align: 'right' });
+  hy += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...GRAY);
+
+  doc.text(`${sk ? 'Datum vystavenia' : 'Issue date'}:`, rightX - 44, hy);
+  doc.setTextColor(...DARK);
+  doc.setFont('helvetica', 'bold');
+  doc.text(invoice.issueDate, rightX, hy, { align: 'right' });
+  hy += 5.5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GRAY);
+  doc.text(`${sk ? 'Datum splatnosti' : 'Due date'}:`, rightX - 44, hy);
+  doc.setTextColor(...DARK);
+  doc.setFont('helvetica', 'bold');
+  doc.text(invoice.dueDate, rightX, hy, { align: 'right' });
+  hy += 5.5;
+
+  if (company.iban) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
     doc.setTextColor(...GRAY);
-    doc.text(m.label, x, y);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.text('IBAN:', rightX - 44, hy);
     doc.setTextColor(...DARK);
-    doc.text(m.value, x, y + 5);
-  });
+    doc.setFont('helvetica', 'bold');
+    doc.text(pd(company.iban), rightX, hy, { align: 'right' });
+    hy += 5.5;
+  }
 
-  /* ── SUPPLIER / CUSTOMER ─────────────────────────────────────────────── */
-  y += 20;
+  /* ── ORANGE DIVIDER ───────────────────────────────────────────────── */
+  const divY = Math.max(sy, hy, logoEndY) + 6;
+  doc.setDrawColor(...ORANGE);
+  doc.setLineWidth(0.8);
+  doc.line(PAD, divY, W - PAD, divY);
+
+  /* ── SUPPLIER / CUSTOMER BOXES ────────────────────────────────────── */
+  const boxY  = divY + 6;
   const halfW = (W - 2 * PAD - 10) / 2;
 
-  // Supplier box
+  // Supplier
   doc.setFillColor(...LGRAY);
-  doc.rect(PAD, y, halfW, 30, 'F');
+  doc.roundedRect(PAD, boxY, halfW, 34, 3, 3, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(...ORANGE);
-  doc.text(sk ? 'DODAVATEL' : 'SUPPLIER', PAD + 4, y + 6);
-  doc.setFont('helvetica', 'normal');
+  doc.text(sk ? 'DODAVATEL' : 'SUPPLIER', PAD + 5, boxY + 6);
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...DARK);
-  doc.text(companyName, PAD + 4, y + 13);
+  doc.text(pd(company.name), PAD + 5, boxY + 13);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  let sLine = boxY + 19;
+  if (company.address) { doc.text(pd(company.address), PAD + 5, sLine); sLine += 5; }
+  const cityZip = [company.zip, company.city].filter(Boolean).join(' ');
+  if (cityZip) { doc.text(pd(cityZip), PAD + 5, sLine); }
 
-  // Customer box
+  // Customer
   const cx = PAD + halfW + 10;
   doc.setFillColor(...LGRAY);
-  doc.rect(cx, y, halfW, 30, 'F');
+  doc.roundedRect(cx, boxY, halfW, 34, 3, 3, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(...ORANGE);
-  doc.text(sk ? 'ODBERATEL' : 'CUSTOMER', cx + 4, y + 6);
-  doc.setFont('helvetica', 'normal');
+  doc.text(sk ? 'ODBERATEL' : 'CUSTOMER', cx + 5, boxY + 6);
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...DARK);
-  if (invoice.customerName) doc.text(invoice.customerName, cx + 4, y + 13);
-  if (invoice.customerAddress) doc.text(invoice.customerAddress, cx + 4, y + 19, { maxWidth: halfW - 8 });
-  const infoY = y + (invoice.customerAddress ? 25 : 19);
-  const infoLine = [invoice.customerIco ? `IČO: ${invoice.customerIco}` : '', invoice.customerDic ? `DIČ: ${invoice.customerDic}` : ''].filter(Boolean).join('   ');
-  if (infoLine) doc.text(infoLine, cx + 4, infoY);
+  if (invoice.customerName) doc.text(pd(invoice.customerName), cx + 5, boxY + 13);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  let cLine = boxY + 19;
+  if (invoice.customerAddress) { doc.text(pd(invoice.customerAddress), cx + 5, cLine, { maxWidth: halfW - 10 }); cLine += 5; }
+  const custInfo = [
+    invoice.customerIco ? `ICO: ${invoice.customerIco}` : '',
+    invoice.customerDic ? `DIC: ${invoice.customerDic}` : '',
+  ].filter(Boolean).join('   ');
+  if (custInfo) doc.text(custInfo, cx + 5, cLine);
 
-  /* ── ITEMS TABLE ─────────────────────────────────────────────────────── */
-  y += 38;
+  /* ── ITEMS TABLE ──────────────────────────────────────────────────── */
+  const tableY = boxY + 40;
 
   autoTable(doc, {
-    startY: y,
+    startY: tableY,
     head: [[
       sk ? 'Popis' : 'Description',
-      sk ? 'Množ.' : 'Qty',
-      sk ? 'J.cena' : 'Unit price',
-      'DPH',
-      sk ? 'Základ' : 'Base',
-      sk ? 'Celkom' : 'Total',
+      sk ? 'Mnoz.' : 'Qty',
+      'MJ',
+      sk ? 'Jedn. cena' : 'Unit price',
+      'DPH %',
+      sk ? 'Zaklad DPH' : 'VAT base',
+      sk ? 'Celkom s DPH' : 'Total',
     ]],
     body: invoice.items.map((item) => {
       const base  = Math.round(item.quantity * item.unitPriceCents);
       const total = Math.round(base * (1 + item.vatRate / 100));
       return [
-        item.name,
+        pd(item.name),
         String(item.quantity),
+        pd((item as unknown as { unit?: string }).unit ?? 'ks'),
         eur(item.unitPriceCents),
         item.vatRate + '%',
         eur(base),
@@ -125,30 +181,30 @@ export function exportInvoicePdf(invoice: Invoice, companyName: string, lang: st
       fillColor: ORANGE,
       textColor: WHITE,
       fontStyle: 'bold',
-      fontSize: 9,
+      fontSize: 8.5,
     },
-    bodyStyles: { fontSize: 9, textColor: DARK },
-    alternateRowStyles: { fillColor: [250, 250, 252] as [number, number, number] },
+    bodyStyles: { fontSize: 8.5, textColor: DARK },
+    alternateRowStyles: { fillColor: LGRAY },
     columnStyles: {
       0: { cellWidth: 'auto' },
-      1: { halign: 'right', cellWidth: 16 },
-      2: { halign: 'right', cellWidth: 26 },
-      3: { halign: 'center', cellWidth: 14 },
-      4: { halign: 'right', cellWidth: 26 },
-      5: { halign: 'right', cellWidth: 26, fontStyle: 'bold' },
+      1: { halign: 'right', cellWidth: 14 },
+      2: { halign: 'center', cellWidth: 12 },
+      3: { halign: 'right', cellWidth: 26 },
+      4: { halign: 'center', cellWidth: 14 },
+      5: { halign: 'right', cellWidth: 26 },
+      6: { halign: 'right', cellWidth: 26, fontStyle: 'bold' },
     },
     margin: { left: PAD, right: PAD },
   });
 
-  /* ── TOTALS BOX ──────────────────────────────────────────────────────── */
+  /* ── TOTALS BOX ────────────────────────────────────────────────────── */
   const tableEnd = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
   const subtotal = calcInvoiceSubtotalCents(invoice.items);
   const total    = calcInvoiceTotalCents(invoice.items);
-  const boxX     = W - PAD - 72;
-  const lineH    = 7;
-  let   ty       = tableEnd + 8;
+  const boxX     = W - PAD - 78;
+  let   ty       = tableEnd + 10;
 
-  // VAT breakdown by rate
+  // VAT breakdown
   const vatByRate: Record<number, number> = {};
   invoice.items.forEach((item) => {
     if (item.vatRate > 0) {
@@ -157,8 +213,9 @@ export function exportInvoicePdf(invoice: Invoice, companyName: string, lang: st
     }
   });
 
+  const lineH = 6.5;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(...GRAY);
   doc.text(sk ? 'Zaklad DPH:' : 'Subtotal:', boxX, ty);
   doc.setTextColor(...DARK);
@@ -173,35 +230,76 @@ export function exportInvoicePdf(invoice: Invoice, companyName: string, lang: st
     ty += lineH;
   });
 
-  // Total line with orange background
+  // Orange total bar
   doc.setFillColor(...ORANGE);
-  doc.rect(boxX - 4, ty - 5, W - PAD - boxX + 4 + PAD, 11, 'F');
+  doc.roundedRect(boxX - 4, ty - 5, W - PAD - boxX + 4 + PAD, 12, 2, 2, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...WHITE);
-  doc.text(sk ? 'CELKOM:' : 'TOTAL:', boxX, ty + 2);
+  doc.text(sk ? 'CELKOM K UHRADE:' : 'TOTAL DUE:', boxX, ty + 3);
+  doc.text(eur(total), W - PAD, ty + 3, { align: 'right' });
+  ty += 18;
 
-  doc.text(eur(total), W - PAD, ty + 2, { align: 'right' });
+  /* ── PAYMENT INFO ──────────────────────────────────────────────────── */
+  if (company.iban || company.bank) {
+    doc.setFillColor(...LGRAY);
+    doc.roundedRect(PAD, ty - 4, W - 2 * PAD, 28, 3, 3, 'F');
 
-  /* ── NOTE ────────────────────────────────────────────────────────────── */
-  if (invoice.note) {
-    ty += 18;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(8);
+    doc.setTextColor(...ORANGE);
+    doc.text(sk ? 'PLATOBNE UDAJE' : 'PAYMENT DETAILS', PAD + 5, ty + 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    const cols = W - 2 * PAD - 10;
+    const c1x = PAD + 5;
+    const c2x = PAD + 5 + cols / 3;
+    const c3x = PAD + 5 + (cols * 2) / 3;
+    const py  = ty + 11;
+
+    doc.setTextColor(...GRAY);
+    doc.text('IBAN:', c1x, py);
+    if (company.bank) doc.text(sk ? 'Banka:' : 'Bank:', c2x, py);
+    doc.text(sk ? 'Variabilny symbol:' : 'Variable symbol:', c3x, py);
+    const py2 = py + 5.5;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    if (company.iban) doc.text(pd(company.iban), c1x, py2);
+    if (company.bank) doc.text(pd(company.bank), c2x, py2);
+    doc.text(invoice.number.replace(/\D/g, ''), c3x, py2);
+
+    ty += 34;
+  }
+
+  /* ── NOTE ──────────────────────────────────────────────────────────── */
+  if (invoice.note) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
     doc.setTextColor(...DARK);
     doc.text(sk ? 'Poznamka:' : 'Note:', PAD, ty);
     doc.setFont('helvetica', 'normal');
-    doc.text(invoice.note, PAD, ty + 6, { maxWidth: W - 2 * PAD - 80 });
+    doc.setFontSize(8.5);
+    doc.setTextColor(...GRAY);
+    doc.text(pd(invoice.note), PAD, ty + 6, { maxWidth: W - 2 * PAD - 80 });
+    ty += 18;
   }
 
-  /* ── FOOTER ──────────────────────────────────────────────────────────── */
-  doc.setFillColor(...DARK);
-  doc.rect(0, 282, W, 15, 'F');
+  /* ── FOOTER ────────────────────────────────────────────────────────── */
+  doc.setDrawColor(...LGRAY);
+  doc.setLineWidth(0.4);
+  doc.line(PAD, H - 16, W - PAD, H - 16);
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(...GRAY);
-  doc.text('Vygenerované aplikáciou Nelka Economics and Logistics', PAD, 291);
-  doc.text(`© ${new Date().getFullYear()} Furiel`, W - PAD, 291, { align: 'right' });
+  doc.text(
+    sk
+      ? 'Faktura bola vystavena v sulade so zakonom c. 222/2004 Z. z. o dani z pridanej hodnoty'
+      : 'Invoice issued in accordance with applicable tax regulations',
+    PAD, H - 10
+  );
+  doc.text(`1 / 1`, W - PAD, H - 10, { align: 'right' });
 
   doc.save(`faktura-${invoice.number}.pdf`);
 }

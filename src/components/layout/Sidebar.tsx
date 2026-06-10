@@ -1,6 +1,7 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Receipt, BarChart2, Settings, Building2, X, FileText, Package, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Receipt, BarChart2, Settings, Building2, X, FileText, Package, ClipboardList, ChevronDown } from 'lucide-react';
 import { useCompanyStore } from '../../store/companyStore';
 import { Logo } from '../common/Logo';
 
@@ -19,9 +20,22 @@ const NAV = [
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { t } = useTranslation();
-  const { getActiveCompany } = useCompanyStore();
+  const navigate = useNavigate();
+  const { getActiveCompany, companies, setActiveCompany } = useCompanyStore();
   const location = useLocation();
   const company = getActiveCompany();
+  const [dropOpen, setDropOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setDropOpen(false);
+      }
+    }
+    if (dropOpen) document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [dropOpen]);
 
   return (
     <>
@@ -59,18 +73,71 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* Active company chip */}
+        {/* Company switcher */}
         {company && (
-          <div style={{
-            margin: '14px 12px 0',
-            padding: '10px 12px', borderRadius: 12,
-            background: 'rgba(249,115,22,0.08)',
-            border: '1px solid rgba(249,115,22,0.15)',
-          }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{company.name}</p>
-            <p style={{ fontSize: 10, color: 'rgba(249,115,22,0.65)', marginTop: 3, fontWeight: 500 }}>
-              {company.type === 'simple' ? 'Jednoduché' : 'Podvojné'} účtovníctvo
-            </p>
+          <div ref={dropRef} style={{ margin: '14px 12px 0', position: 'relative' }}>
+            <button
+              onClick={() => setDropOpen((v) => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 12px', borderRadius: 12,
+                background: 'rgba(249,115,22,0.08)',
+                border: '1px solid rgba(249,115,22,0.15)',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{company.name}</p>
+                <p style={{ fontSize: 10, color: 'rgba(249,115,22,0.65)', marginTop: 3, fontWeight: 500, margin: '3px 0 0' }}>
+                  {company.type === 'simple' ? 'Jednoduche' : 'Podvojne'} uctovnictvo
+                </p>
+              </div>
+              <ChevronDown size={13} color="rgba(249,115,22,0.6)" style={{ flexShrink: 0, transform: dropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {dropOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+                background: '#1a1a1f', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 12, zIndex: 200, overflow: 'hidden',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              }}>
+                {companies.map((c) => {
+                  const isActive = c.id === company.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => { setActiveCompany(c.id); setDropOpen(false); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '10px 12px', border: 'none', cursor: 'pointer',
+                        background: isActive ? 'rgba(249,115,22,0.12)' : 'transparent',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: isActive ? '#f97316' : 'rgba(255,255,255,0.2)' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: isActive ? '#f97316' : 'rgba(255,255,255,0.7)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</p>
+                        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '1px 0 0' }}>{c.type === 'simple' ? 'Jednoduche' : 'Podvojne'}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <button
+                    onClick={() => { setDropOpen(false); navigate('/companies'); onClose(); }}
+                    style={{
+                      width: '100%', padding: '10px 12px', border: 'none', cursor: 'pointer',
+                      background: 'transparent', textAlign: 'left',
+                      fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Spravovat firmy →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

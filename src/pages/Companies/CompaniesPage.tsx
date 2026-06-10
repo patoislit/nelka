@@ -9,8 +9,12 @@ import { Modal } from '../../components/common/Modal';
 import { Button } from '../../components/common/Button';
 import { useDark } from '../../store/themeStore';
 
-interface Form { name: string; ico: string; dic: string; type: AccountingType; }
-const EMPTY: Form = { name: '', ico: '', dic: '', type: 'simple' };
+interface Form {
+  name: string; ico: string; dic: string; type: AccountingType;
+  address: string; city: string; zip: string; email: string; phone: string;
+  iban: string; bank: string; logoDataUrl: string;
+}
+const EMPTY: Form = { name: '', ico: '', dic: '', type: 'simple', address: '', city: '', zip: '', email: '', phone: '', iban: '', bank: '', logoDataUrl: '' };
 
 export function CompaniesPage() {
   const { t } = useTranslation();
@@ -40,14 +44,14 @@ export function CompaniesPage() {
   const [delConfirm, setDelConfirm] = useState<string | null>(null);
 
   function openAdd()            { setForm({ ...EMPTY, type: selectedType }); setEditId(null); setModalOpen(true); }
-  function openEdit(c: Company) { setForm({ name: c.name, ico: c.ico, dic: c.dic, type: c.type }); setEditId(c.id); setModalOpen(true); }
+  function openEdit(c: Company) { setForm({ name: c.name, ico: c.ico, dic: c.dic, type: c.type, address: c.address ?? '', city: c.city ?? '', zip: c.zip ?? '', email: c.email ?? '', phone: c.phone ?? '', iban: c.iban ?? '', bank: c.bank ?? '', logoDataUrl: c.logoDataUrl ?? '' }); setEditId(c.id); setModalOpen(true); }
 
   function handleSave() {
     if (!form.name.trim()) return;
     if (editId) {
-      updateCompany(editId, form);
+      updateCompany(editId, { ...form, logoDataUrl: form.logoDataUrl || undefined });
     } else {
-      const c = addCompany({ ...form, ownerId: 'local' });
+      const c = addCompany({ ...form, ownerId: 'local', logoDataUrl: form.logoDataUrl || undefined });
       setActiveCompany(c.id);
     }
     setModalOpen(false);
@@ -163,10 +167,12 @@ export function CompaniesPage() {
       {/* Add/Edit Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editId ? t('companies.modal_edit') : t('companies.modal_title')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'Inter', system-ui, sans-serif" }}>
+          {/* Name */}
           <div>
             <label style={labelStyle}>{t('companies.name_label')}</label>
             <input style={inputStyle} placeholder={t('companies.name_placeholder')} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </div>
+          {/* IČO + DIČ */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>{t('companies.ico_label')}</label>
@@ -177,6 +183,74 @@ export function CompaniesPage() {
               <input style={inputStyle} placeholder={t('companies.dic_placeholder')} value={form.dic} onChange={(e) => setForm((f) => ({ ...f, dic: e.target.value }))} />
             </div>
           </div>
+          {/* Adresa + Mesto + PSČ */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Adresa</label>
+              <input style={inputStyle} placeholder="Ulica a číslo" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+            </div>
+            <div>
+              <label style={labelStyle}>Mesto</label>
+              <input style={inputStyle} placeholder="Bratislava" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+            </div>
+            <div>
+              <label style={labelStyle}>PSČ</label>
+              <input style={inputStyle} placeholder="81101" value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
+            </div>
+          </div>
+          {/* Email + Telefón */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Email</label>
+              <input style={inputStyle} placeholder="firma@example.sk" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div>
+              <label style={labelStyle}>Telefón</label>
+              <input style={inputStyle} placeholder="+421 900 000 000" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+            </div>
+          </div>
+          {/* IBAN + Banka */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>IBAN</label>
+              <input style={inputStyle} placeholder="SK00 0000 0000 0000 0000 0000" value={form.iban} onChange={(e) => setForm((f) => ({ ...f, iban: e.target.value }))} />
+            </div>
+            <div>
+              <label style={labelStyle}>Banka</label>
+              <input style={inputStyle} placeholder="Slovenská sporiteľňa" value={form.bank} onChange={(e) => setForm((f) => ({ ...f, bank: e.target.value }))} />
+            </div>
+          </div>
+          {/* Logo upload */}
+          <div>
+            <label style={labelStyle}>Logo</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {form.logoDataUrl && (
+                <img src={form.logoDataUrl} alt="logo" style={{ width: 48, height: 48, objectFit: 'contain', borderRadius: 8, border: `1px solid ${dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}` }} />
+              )}
+              <label style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                padding: '8px 14px', borderRadius: 10,
+                border: `1px dashed ${dark ? 'rgba(255,255,255,0.2)' : '#d1d5db'}`,
+                color: dark ? 'rgba(255,255,255,0.5)' : '#6b7280',
+                fontSize: 12, fontWeight: 500,
+              }}>
+                Nahrať logo
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => { if (ev.target?.result) setForm((f) => ({ ...f, logoDataUrl: ev.target!.result as string })); };
+                  reader.readAsDataURL(file);
+                }} />
+              </label>
+              {form.logoDataUrl && (
+                <button onClick={() => setForm((f) => ({ ...f, logoDataUrl: '' }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 12 }}>
+                  Odstrániť
+                </button>
+              )}
+            </div>
+          </div>
+          {/* Accounting type */}
           <div>
             <label style={labelStyle}>{t('companies.type')}</label>
             <div style={{ display: 'flex', gap: 8 }}>

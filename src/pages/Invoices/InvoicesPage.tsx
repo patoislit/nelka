@@ -255,7 +255,7 @@ export function InvoicesPage() {
                           </ActionBtn>
                         )}
                         {/* PDF */}
-                        <ActionBtn onClick={() => exportInvoicePdf(inv, company.name, i18n.language)} title={t('invoices.export_pdf')} dark={dark}>
+                        <ActionBtn onClick={() => exportInvoicePdf(inv, company, i18n.language)} title={t('invoices.export_pdf')} dark={dark}>
                           <FileText size={14} />
                         </ActionBtn>
                         {/* Mark paid */}

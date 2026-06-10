@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Globe, Palette, Building2, HardDrive, Bell, HelpCircle, Info, Sun, Moon, Monitor, Download, Smartphone } from 'lucide-react';
+import { Globe, Palette, Building2, HardDrive, Bell, HelpCircle, Info, Sun, Moon, Monitor, Download, Upload, Smartphone } from 'lucide-react';
 import { useThemeStore, useDark } from '../../store/themeStore';
 import type { ThemeMode } from '../../store/themeStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -92,6 +92,8 @@ export function SettingsPage() {
 
   const activeCompany = getActiveCompany();
   const allCompanies = useCompanyStore((s) => s.companies);
+  const importRef = useRef<HTMLInputElement>(null);
+  const [importMsg, setImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // PWA install prompt
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -137,6 +139,44 @@ export function SettingsPage() {
     });
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  function importBackup(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const raw = e.target?.result as string;
+        const data = JSON.parse(raw);
+        if (data.version === undefined) throw new Error('Neplatny format suboru (chyba verzia)');
+
+        // Restore companies
+        if (Array.isArray(data.companies)) {
+          useCompanyStore.setState({ companies: data.companies });
+        }
+        // Restore transactions (v2 structure)
+        if (Array.isArray(data.simpleTransactions) || Array.isArray(data.journalEntries)) {
+          useTransactionStore.setState({
+            simpleTransactions: Array.isArray(data.simpleTransactions) ? data.simpleTransactions : [],
+            journalEntries: Array.isArray(data.journalEntries) ? data.journalEntries : [],
+          });
+        }
+        // Restore invoices
+        if (Array.isArray(data.invoices)) {
+          useInvoiceStore.setState({ invoices: data.invoices });
+        }
+        // Restore warehouse
+        if (Array.isArray(data.warehouseItems)) {
+          useWarehouseStore.setState({ items: data.warehouseItems });
+        }
+
+        setImportMsg({ type: 'success', text: 'Zaloha bola uspesne obnovena.' });
+        setTimeout(() => setImportMsg(null), 5000);
+      } catch (err) {
+        setImportMsg({ type: 'error', text: `Chyba: ${err instanceof Error ? err.message : 'Neplatny subor'}` });
+        setTimeout(() => setImportMsg(null), 6000);
+      }
+    };
+    reader.readAsText(file);
   }
 
   // Data stats
@@ -286,9 +326,33 @@ export function SettingsPage() {
             <button onClick={exportData} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, border: `1px solid ${inputBorder}`, cursor: 'pointer', background: 'transparent', color: text, fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>
               <Download size={13} /> {t('settings.backup.export_json')}
             </button>
+            <button
+              onClick={() => importRef.current?.click()}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, border: `1px solid ${inputBorder}`, cursor: 'pointer', background: 'transparent', color: text, fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}
+            >
+              <Upload size={13} /> Importovat zalohu
+            </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept="application/json,.json"
+              style={{ display: 'none' }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) { importBackup(f); e.target.value = ''; } }}
+            />
           </div>
+          {importMsg && (
+            <div style={{
+              padding: '9px 14px', borderRadius: 10, marginBottom: 10,
+              background: importMsg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${importMsg.type === 'success' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
+              color: importMsg.type === 'success' ? '#10b981' : '#ef4444',
+              fontSize: 12, fontWeight: 500,
+            }}>
+              {importMsg.text}
+            </div>
+          )}
           <p style={{ fontSize: 11, color: muted }}>
-            Záloha obsahuje všetky firmy, transakcie, faktúry a sklad. Dáta sú synchronizované s Firebase Firestore.
+            Zaloha obsahuje vsetky firmy, transakcie, faktury a sklad. Data su synchronizovane s Firebase Firestore.
           </p>
         </Card>
 
