@@ -12,9 +12,9 @@ function createWindow() {
     // Mac: skryté tlačidlá, Windows: default frame
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
     backgroundColor: '#0c0c0e',
-    icon: path.join(__dirname, '../public/icons/icon-512.png'),
+    icon: path.join(app.getAppPath(), 'public/icons/icon-512.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: path.join(app.getAppPath(), 'electron/preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false, // potrebné pre file:// protokol
@@ -26,7 +26,9 @@ function createWindow() {
   if (isDev) {
     win.loadURL('http://localhost:5173');
   } else {
-    const indexPath = path.join(__dirname, '../dist/index.html');
+    // app.getAppPath() je spoľahlivejšie ako __dirname v ASAR balíkoch
+    const indexPath = path.join(app.getAppPath(), 'dist/index.html');
+    console.log('Loading:', indexPath);
     win.loadFile(indexPath).catch((err) => {
       console.error('Failed to load:', indexPath, err);
     });
@@ -36,22 +38,21 @@ function createWindow() {
   win.once('ready-to-show', () => {
     win.show();
     win.focus();
-    if (isDev) win.webContents.openDevTools();
+    // DevTools vždy zapnuté — dočasne pre diagnostiku
+    win.webContents.openDevTools();
   });
 
-  // Fallback — ak ready-to-show nespustí do 3 sekúnd, zobraz aj tak
+  // Fallback — ak ready-to-show nespustí do 5 sekúnd, zobraz aj tak
   setTimeout(() => {
-    if (!win.isVisible()) win.show();
-  }, 3000);
-
-  // Ak načítanie zlyhá — skús znova
-  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error('did-fail-load:', errorCode, errorDescription);
-    if (!isDev) {
-      setTimeout(() => {
-        win.loadFile(path.join(__dirname, '../dist/index.html'));
-      }, 1000);
+    if (!win.isVisible()) {
+      win.show();
+      win.webContents.openDevTools();
     }
+  }, 5000);
+
+  // Ak načítanie zlyhá — zaznamenaj chybu, NEskúšaj znova (retry loop môže spôsobiť problém)
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('did-fail-load:', errorCode, errorDescription, validatedURL);
   });
 
   // Externé linky otvor v prehliadači
