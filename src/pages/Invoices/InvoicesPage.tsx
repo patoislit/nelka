@@ -61,19 +61,66 @@ export function InvoicesPage() {
   const text     = dark ? '#ffffff' : '#111827';
   const muted    = dark ? 'rgba(255,255,255,0.38)' : '#9ca3af';
 
-  // Overdue check on mount
+  // ── Helper: days until due (negative = past due) ──
+  function getDaysUntilDue(dueDate: string): number {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  // Overdue + upcoming due check on mount
   useEffect(() => {
     if (!company) return;
     const today = new Date().toISOString().slice(0, 10);
+    const { notifications } = useNotificationStore.getState();
+
     getInvoicesForCompany(company.id).forEach((inv) => {
+      const days = getDaysUntilDue(inv.dueDate);
+
+      // Already overdue
       if (inv.status === 'sent' && inv.dueDate < today) {
         updateInvoice(inv.id, { status: 'overdue' });
-        addNotification({
-          companyId: company.id, type: 'warning',
-          title: 'Faktúra po splatnosti', titleEn: 'Invoice overdue',
-          body: `Faktúra ${inv.number} – ${inv.customerName}`,
-          bodyEn: `Invoice ${inv.number} – ${inv.customerName}`,
-        });
+        const body = `Faktúra ${inv.number} – ${inv.customerName}`;
+        const alreadyExists = notifications.some((n) => n.companyId === company.id && n.body === body && !n.dismissedAt);
+        if (!alreadyExists) {
+          addNotification({
+            companyId: company.id, type: 'warning',
+            title: 'Faktúra po splatnosti', titleEn: 'Invoice overdue',
+            body,
+            bodyEn: `Invoice ${inv.number} – ${inv.customerName}`,
+          });
+        }
+      }
+
+      // 5 days before due
+      if (inv.status === 'sent' && days === 5) {
+        const body = `Faktúra ${inv.number} – ${inv.customerName} je splatná ${inv.dueDate}`;
+        const alreadyExists = notifications.some((n) => n.companyId === company.id && n.body === body && !n.dismissedAt);
+        if (!alreadyExists) {
+          addNotification({
+            companyId: company.id, type: 'info',
+            title: 'Faktúra splatná o 5 dní', titleEn: 'Invoice due in 5 days',
+            body,
+            bodyEn: `Invoice ${inv.number} – ${inv.customerName} is due ${inv.dueDate}`,
+          });
+        }
+      }
+
+      // 1 day before due
+      if (inv.status === 'sent' && days === 1) {
+        const total = calcInvoiceTotalCents(inv.items);
+        const body = `Faktúra ${inv.number} – ${inv.customerName} – ${centsToEur(total)} €`;
+        const alreadyExists = notifications.some((n) => n.companyId === company.id && n.body === body && !n.dismissedAt);
+        if (!alreadyExists) {
+          addNotification({
+            companyId: company.id, type: 'warning',
+            title: 'Faktúra splatná zajtra!', titleEn: 'Invoice due tomorrow!',
+            body,
+            bodyEn: `Invoice ${inv.number} – ${inv.customerName} – ${centsToEur(total)} €`,
+          });
+        }
       }
     });
   }, [company?.id]);

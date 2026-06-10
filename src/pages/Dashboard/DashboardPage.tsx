@@ -1,10 +1,29 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCompanyStore } from '../../store/companyStore';
 import { useTransactionStore, centsToEur } from '../../store/transactionStore';
+import { useInvoiceStore, calcInvoiceTotalCents } from '../../store/invoiceStore';
 import { useDark } from '../../store/themeStore';
 import { GuideBar } from '../../components/common/GuideBar';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts';
+
+const SK_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+const PIE_COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444', '#f59e0b', '#06b6d4'];
+
+function getLast6Months(): { year: number; month: number; label: string }[] {
+  const now = new Date();
+  const result = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    result.push({ year: d.getFullYear(), month: d.getMonth(), label: SK_MONTHS[d.getMonth()] });
+  }
+  return result;
+}
 
 export function DashboardPage() {
   const { t } = useTranslation();
@@ -12,6 +31,7 @@ export function DashboardPage() {
   const { user } = useAuthStore();
   const { getActiveCompany } = useCompanyStore();
   const { getSimple, getJournalEntries } = useTransactionStore();
+  const { getInvoicesForCompany } = useInvoiceStore();
   const dark = useDark();
   const company = getActiveCompany();
 
@@ -132,6 +152,96 @@ export function DashboardPage() {
     },
   ];
 
+  // ── Chart data: last 6 months ──
+  const months6 = getLast6Months();
+  const barData = months6.map(({ year, month, label }) => {
+    let inc = 0, exp = 0;
+    if (company?.type === 'simple') {
+      const txs = getSimple(company.id);
+      for (const tx of txs) {
+        const d = new Date(tx.date);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          if (tx.type === 'income') inc += tx.amountCents;
+          else exp += tx.amountCents;
+        }
+      }
+    } else if (company?.type === 'double') {
+      const entries = getJournalEntries(company.id);
+      for (const e of entries) {
+        const d = new Date(e.date);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          for (const l of e.lines) {
+            if (l.accountCode.startsWith('6')) inc += l.creditCents;
+            if (l.accountCode.startsWith('5')) exp += l.debitCents;
+          }
+        }
+      }
+    }
+    return { label, income: inc, expense: exp };
+  });
+
+  // ── Pie data: expenses by category / account group ──
+  const pieDataMap: Record<string, number> = {};
+  if (company?.type === 'simple') {
+    const txs = getSimple(company.id);
+    for (const tx of txs) {
+      if (tx.type === 'expense') {
+        pieDataMap[tx.category] = (pieDataMap[tx.category] ?? 0) + tx.amountCents;
+      }
+    }
+  } else if (company?.type === 'double') {
+    const entries = getJournalEntries(company.id);
+    for (const e of entries) {
+      for (const l of e.lines) {
+        if (l.accountCode.startsWith('5')) {
+          const grp = l.accountCode.slice(0, 2) + 'x';
+          pieDataMap[grp] = (pieDataMap[grp] ?? 0) + l.debitCents;
+        }
+      }
+    }
+  }
+  const pieData = Object.entries(pieDataMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7);
+  const pieTotal = pieData.reduce((s, d) => s + d.value, 0);
+
+  // ── Recent activity ──
+  const recentActivity: { id: string; desc: string; date: string; amountCents: number; isIncome: boolean }[] = [];
+  if (company?.type === 'simple') {
+    const txs = getSimple(company.id).slice(0, 5);
+    for (const tx of txs) {
+      recentActivity.push({ id: tx.id, desc: tx.description, date: tx.date, amountCents: tx.amountCents, isIncome: tx.type === 'income' });
+    }
+  } else if (company?.type === 'double') {
+    const entries = getJournalEntries(company.id).slice(0, 5);
+    for (const e of entries) {
+      const credits6 = e.lines.filter(l => l.accountCode.startsWith('6')).reduce((s, l) => s + l.creditCents, 0);
+      const debits5 = e.lines.filter(l => l.accountCode.startsWith('5')).reduce((s, l) => s + l.debitCents, 0);
+      const isIncome = credits6 > 0;
+      const amount = isIncome ? credits6 : debits5;
+      recentActivity.push({ id: e.id, desc: e.description, date: e.date, amountCents: amount, isIncome });
+    }
+  }
+
+  // ── Invoice alerts ──
+  const today = new Date().toISOString().slice(0, 10);
+  const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const alertInvoices = company
+    ? getInvoicesForCompany(company.id).filter(
+        (inv) =>
+          inv.status === 'overdue' ||
+          (inv.status === 'sent' && inv.dueDate >= today && inv.dueDate <= in7Days)
+      )
+    : [];
+
+  const chartAxisColor = dark ? 'rgba(255,255,255,0.25)' : '#9ca3af';
+  const chartGridColor = dark ? 'rgba(255,255,255,0.05)' : '#f3f4f6';
+  const tooltipBg = dark ? '#1a1a1c' : '#ffffff';
+  const tooltipBorder = dark ? 'rgba(255,255,255,0.1)' : '#e5e7eb';
+
+  const currentMonthLabel = SK_MONTHS[new Date().getMonth()] + ' ' + new Date().getFullYear();
+
   return (
     <div style={{
       minHeight: '100%',
@@ -139,7 +249,7 @@ export function DashboardPage() {
       fontFamily: "'Inter', system-ui, sans-serif",
       padding: '40px 24px 60px',
     }}>
-      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <GuideBar
           id="dashboard-guide"
           title={t('guide.dashboard_title')}
@@ -204,6 +314,252 @@ export function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* ── MONTHLY BAR CHART ── */}
+        {company && (
+          <div style={{
+            background: surface, border: `1px solid ${border}`,
+            borderRadius: 20, padding: '24px 24px 16px',
+            marginBottom: 20,
+          }}>
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: text, margin: 0, letterSpacing: '-0.02em' }}>
+                Prehľad za posledných 6 mesiacov
+              </p>
+              <p style={{ fontSize: 12, color: muted, marginTop: 3 }}>{currentMonthLabel}</p>
+            </div>
+            {txCount === 0 ? (
+              <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <p style={{ color: muted, fontSize: 13 }}>Žiadne transakcie</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={barData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: chartAxisColor }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(v: number) => v > 0 ? `${centsToEur(v)} €` : ''}
+                    tick={{ fontSize: 10, fill: chartAxisColor }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={72}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      return (
+                        <div style={{
+                          background: tooltipBg, border: `1px solid ${tooltipBorder}`,
+                          borderRadius: 10, padding: '10px 14px', fontSize: 12,
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                        }}>
+                          <p style={{ fontWeight: 700, color: text, marginBottom: 6 }}>{label}</p>
+                          {payload.map((p) => (
+                            <p key={p.name} style={{ color: p.color as string, margin: '2px 0' }}>
+                              {p.name === 'income' ? 'Príjmy' : 'Výdavky'}: {centsToEur(p.value as number)} €
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    formatter={(value) => (
+                      <span style={{ fontSize: 11, color: muted }}>
+                        {value === 'income' ? 'Príjmy' : 'Výdavky'}
+                      </span>
+                    )}
+                  />
+                  <Bar dataKey="income" name="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="expense" name="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        )}
+
+        {/* ── PIE + RECENT ACTIVITY ── */}
+        {company && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 20,
+            marginBottom: 20,
+          }}>
+            {/* Category pie */}
+            <div style={{
+              background: surface, border: `1px solid ${border}`,
+              borderRadius: 20, padding: '24px',
+            }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: text, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
+                Výdavky podľa kategórie
+              </p>
+              {pieData.length === 0 ? (
+                <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <p style={{ color: muted, fontSize: 13 }}>Žiadne dáta</p>
+                </div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={170}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        dataKey="value"
+                        paddingAngle={2}
+                      >
+                        {pieData.map((_, i) => (
+                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {pieData.map((d, i) => (
+                      <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: muted }}>{d.name}</span>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: text }}>
+                          {pieTotal > 0 ? Math.round((d.value / pieTotal) * 100) : 0}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Recent activity */}
+            <div style={{
+              background: surface, border: `1px solid ${border}`,
+              borderRadius: 20, padding: '24px',
+            }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: text, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
+                Posledná aktivita
+              </p>
+              {recentActivity.length === 0 ? (
+                <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <p style={{ color: muted, fontSize: 13 }}>Žiadne transakcie</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {recentActivity.map((item) => (
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                        background: item.isIncome ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"
+                          stroke={item.isIncome ? '#10b981' : '#ef4444'} strokeWidth="2.5">
+                          {item.isIncome
+                            ? <path strokeLinecap="round" strokeLinejoin="round" d="M7 17l9.2-9.2M17 17V7H7" />
+                            : <path strokeLinecap="round" strokeLinejoin="round" d="M17 7l-9.2 9.2M7 7v10h10" />}
+                        </svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.desc || '–'}
+                        </p>
+                        <p style={{ fontSize: 11, color: muted, margin: '1px 0 0' }}>{item.date}</p>
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: item.isIncome ? '#10b981' : '#ef4444', flexShrink: 0 }}>
+                        {item.isIncome ? '+' : '-'}{centsToEur(item.amountCents)} €
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => navigate('/transactions')}
+                style={{
+                  marginTop: 16, width: '100%', padding: '8px',
+                  background: 'transparent', border: `1px solid ${border}`,
+                  borderRadius: 10, cursor: 'pointer', fontSize: 12,
+                  fontWeight: 600, color: muted, fontFamily: 'inherit',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.color = '#f97316'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = border; e.currentTarget.style.color = muted; }}
+              >
+                Zobraziť všetky →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── INVOICE ALERTS ── */}
+        {alertInvoices.length > 0 && (
+          <div style={{
+            background: surface, border: `1px solid ${border}`,
+            borderRadius: 20, padding: '24px',
+            marginBottom: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: text, margin: 0, letterSpacing: '-0.02em' }}>
+                Upomienky faktúr
+              </p>
+              <button
+                onClick={() => navigate('/invoices')}
+                style={{
+                  fontSize: 12, fontWeight: 600, color: '#f97316',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Zobraziť faktúry →
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {alertInvoices.map((inv) => {
+                const isOverdue = inv.status === 'overdue';
+                const alertBg = isOverdue
+                  ? (dark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)')
+                  : (dark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.04)');
+                const alertBorder = isOverdue ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)';
+                const alertColor = isOverdue ? '#ef4444' : '#f59e0b';
+                const total = calcInvoiceTotalCents(inv.items);
+                return (
+                  <div key={inv.id} style={{
+                    background: alertBg,
+                    border: `1px solid ${alertBorder}`,
+                    borderRadius: 12, padding: '12px 16px',
+                    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                  }}>
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: alertColor, flexShrink: 0,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: alertColor }}>{inv.number}</span>
+                      <span style={{ fontSize: 12, color: text, marginLeft: 8 }}>{inv.customerName}</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: muted }}>Splatnosť: {inv.dueDate}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: text }}>{centsToEur(total)} €</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700,
+                      background: isOverdue ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+                      color: alertColor,
+                      padding: '3px 8px', borderRadius: 999,
+                    }}>
+                      {isOverdue ? 'Po splatnosti' : 'Blíži sa'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── ACTIONS ── */}
         <div style={{ marginBottom: 40 }}>
@@ -341,5 +697,3 @@ function NoCompany({ surface, border, text, muted, onAdd, t }: {
     </div>
   );
 }
-
-import { useState } from 'react';
