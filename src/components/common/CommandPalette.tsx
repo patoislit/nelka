@@ -34,17 +34,17 @@ export function CommandPalette({ open, onClose }: Props) {
   const fire = (action: () => void) => { action(); onClose(); };
 
   const COMMANDS: Command[] = [
-    { id: 'dashboard',    label: 'Dashboard',           sublabel: 'Prehľad a grafy',         icon: <LayoutDashboard size={16} />, action: () => go('/dashboard'),    keywords: 'dashboard prehled' },
-    { id: 'transactions', label: 'Transakcie',           sublabel: 'Príjmy a výdavky',        icon: <Receipt size={16} />,         action: () => go('/transactions'), keywords: 'transakcie prijmy vydavky' },
-    { id: 'invoices',     label: 'Faktúry',              sublabel: 'Vystavené faktúry',        icon: <FileText size={16} />,        action: () => go('/invoices'),     keywords: 'faktury invoice' },
-    { id: 'warehouse',    label: 'Sklad',                sublabel: 'Skladové položky',         icon: <Package size={16} />,         action: () => go('/warehouse'),    keywords: 'sklad warehouse tovar' },
-    { id: 'tax',          label: 'Daňové priznanie',     sublabel: 'Výpočet dane',             icon: <ClipboardList size={16} />,   action: () => go('/tax'),          keywords: 'dan danove priznanie' },
-    { id: 'reports',      label: 'Reporty',              sublabel: 'Výkazy a zostavy',         icon: <BarChart2 size={16} />,       action: () => go('/reports'),      keywords: 'reporty vykazy zostavy' },
-    { id: 'companies',    label: 'Firmy',                sublabel: 'Správa firiem',            icon: <Building2 size={16} />,       action: () => go('/companies'),    keywords: 'firmy spolocnosti' },
-    { id: 'settings',     label: 'Nastavenia',           sublabel: 'Nastavenia aplikácie',     icon: <Settings size={16} />,        action: () => go('/settings'),     keywords: 'nastavenia settings' },
-    { id: 'new-income',   label: 'Nový príjem',          sublabel: 'Ctrl + N na transakciách', icon: <Plus size={16} color="#10b981" />, action: () => { go('/transactions'); setTimeout(() => window.dispatchEvent(new CustomEvent('nelka:new-income')), 200); }, keywords: 'novy prijem transakcia' },
-    { id: 'new-expense',  label: 'Nový výdavok',         sublabel: 'Ctrl + N na transakciách', icon: <Plus size={16} color="#ef4444" />, action: () => { go('/transactions'); setTimeout(() => window.dispatchEvent(new CustomEvent('nelka:new-expense')), 200); }, keywords: 'novy vydavok transakcia' },
-    { id: 'new-invoice',  label: 'Nová faktúra',         sublabel: 'Vystaviť faktúru',         icon: <Plus size={16} color="#f97316" />, action: () => { go('/invoices'); setTimeout(() => window.dispatchEvent(new CustomEvent('nelka:new-invoice')), 200); }, keywords: 'nova faktura invoice' },
+    { id: 'dashboard',    label: 'Dashboard',        sublabel: 'Ctrl+D · Ctrl+1',     icon: <LayoutDashboard size={16} />, action: () => go('/dashboard'),    keywords: 'dashboard prehled' },
+    { id: 'transactions', label: 'Transakcie',        sublabel: 'Ctrl+T · Ctrl+2',     icon: <Receipt size={16} />,         action: () => go('/transactions'), keywords: 'transakcie prijmy vydavky' },
+    { id: 'invoices',     label: 'Faktúry',           sublabel: 'Ctrl+I · Ctrl+3',     icon: <FileText size={16} />,        action: () => go('/invoices'),     keywords: 'faktury invoice' },
+    { id: 'warehouse',    label: 'Sklad',             sublabel: 'Ctrl+W · Ctrl+4',     icon: <Package size={16} />,         action: () => go('/warehouse'),    keywords: 'sklad warehouse tovar' },
+    { id: 'tax',          label: 'Daňové priznanie',  sublabel: 'Ctrl+5',              icon: <ClipboardList size={16} />,   action: () => go('/tax'),          keywords: 'dan danove priznanie' },
+    { id: 'reports',      label: 'Reporty',           sublabel: 'Ctrl+R · Ctrl+6',     icon: <BarChart2 size={16} />,       action: () => go('/reports'),      keywords: 'reporty vykazy zostavy' },
+    { id: 'companies',    label: 'Firmy',             sublabel: 'Ctrl+7',              icon: <Building2 size={16} />,       action: () => go('/companies'),    keywords: 'firmy spolocnosti' },
+    { id: 'settings',     label: 'Nastavenia',        sublabel: 'Ctrl+8',              icon: <Settings size={16} />,        action: () => go('/settings'),     keywords: 'nastavenia settings' },
+    { id: 'new-income',   label: 'Nový príjem',       sublabel: 'Ctrl+N',              icon: <Plus size={16} color="#10b981" />, action: () => { go('/transactions'); setTimeout(() => window.dispatchEvent(new CustomEvent('nelka:new-income')), 200); }, keywords: 'novy prijem transakcia' },
+    { id: 'new-expense',  label: 'Nový výdavok',      sublabel: 'Ctrl+N (v transakciách)', icon: <Plus size={16} color="#ef4444" />, action: () => { go('/transactions'); setTimeout(() => window.dispatchEvent(new CustomEvent('nelka:new-expense')), 200); }, keywords: 'novy vydavok transakcia' },
+    { id: 'new-invoice',  label: 'Nová faktúra',      sublabel: 'Ctrl+Shift+N',        icon: <Plus size={16} color="#f97316" />, action: () => { go('/invoices'); setTimeout(() => window.dispatchEvent(new CustomEvent('nelka:new-invoice')), 200); }, keywords: 'nova faktura invoice' },
   ];
 
   const filtered = useMemo(() => {
