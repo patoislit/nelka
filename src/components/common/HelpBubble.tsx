@@ -3,126 +3,89 @@ import { useDark } from '../../store/themeStore';
 
 interface Props {
   text: string;
-  /** Where to show the bubble relative to the trigger. Default: 'top' */
   position?: 'top' | 'bottom' | 'left' | 'right';
 }
 
 export function HelpBubble({ text, position = 'top' }: Props) {
   const dark = useDark();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+
+  // Vypočítaj pozíciu bubliny relatívne k viewportu (fixed positioning)
+  function calcCoords() {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const bubbleW = Math.min(230, vw - 32);
+
+    let top = 0;
+    let left = 0;
+
+    if (position === 'bottom' || r.top < 80) {
+      // Pod tlačidlom
+      top = r.bottom + 10;
+      left = r.left + r.width / 2 - bubbleW / 2;
+    } else if (position === 'top') {
+      // Nad tlačidlom — ale ak by presiahlo hore, daj dole
+      top = r.top - 10; // translateY(-100%) sa rieši neskôr
+      left = r.left + r.width / 2 - bubbleW / 2;
+    } else if (position === 'right') {
+      top = r.top + r.height / 2;
+      left = r.right + 10;
+    } else {
+      // left
+      top = r.top + r.height / 2;
+      left = r.left - bubbleW - 10;
+    }
+
+    // Zabráň presahovaniu z obrazovky
+    left = Math.max(16, Math.min(left, vw - bubbleW - 16));
+
+    setCoords({ top, left });
+  }
+
+  function toggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!open) calcCoords();
+    setOpen(o => !o);
+  }
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent | TouchEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const close = (e: MouseEvent | TouchEvent) => {
+      if (btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('touchstart', close);
     return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('touchstart', close);
     };
   }, [open]);
 
-  const bubbleBg    = dark ? '#1e1e22' : '#ffffff';
-  const bubbleBd    = dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb';
-  const bubbleText  = dark ? 'rgba(255,255,255,0.82)' : '#374151';
+  const bubbleBg   = dark ? '#1e1e22' : '#ffffff';
+  const bubbleBd   = dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb';
+  const bubbleText = dark ? 'rgba(255,255,255,0.82)' : '#374151';
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const bubbleW = Math.min(230, vw - 32);
 
-  // Position styles for the bubble
-  const bubbleStyle: React.CSSProperties = {
-    position: 'absolute',
-    zIndex: 999,
-    background: bubbleBg,
-    border: `1px solid ${bubbleBd}`,
-    borderRadius: 12,
-    padding: '10px 14px',
-    fontSize: 12,
-    lineHeight: 1.55,
-    color: bubbleText,
-    width: 230,
-    boxShadow: dark
-      ? '0 8px 32px rgba(0,0,0,0.5)'
-      : '0 8px 32px rgba(0,0,0,0.12)',
-    whiteSpace: 'normal',
-    fontFamily: "'Inter', sans-serif",
-    fontWeight: 400,
-    pointerEvents: 'none',
-  };
-
-  // Tail (triangle) base style
-  const tailBase: React.CSSProperties = {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-  };
-
-  let posStyle: React.CSSProperties = {};
-  let tailStyle: React.CSSProperties = {};
-
-  switch (position) {
-    case 'top':
-      posStyle = { bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)' };
-      tailStyle = {
-        ...tailBase,
-        bottom: -7, left: '50%', transform: 'translateX(-50%)',
-        borderLeft: '7px solid transparent',
-        borderRight: '7px solid transparent',
-        borderTop: `7px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
-      };
-      break;
-    case 'bottom':
-      posStyle = { top: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)' };
-      tailStyle = {
-        ...tailBase,
-        top: -7, left: '50%', transform: 'translateX(-50%)',
-        borderLeft: '7px solid transparent',
-        borderRight: '7px solid transparent',
-        borderBottom: `7px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
-      };
-      break;
-    case 'right':
-      posStyle = { top: '50%', left: 'calc(100% + 10px)', transform: 'translateY(-50%)' };
-      tailStyle = {
-        ...tailBase,
-        left: -7, top: '50%', transform: 'translateY(-50%)',
-        borderTop: '7px solid transparent',
-        borderBottom: '7px solid transparent',
-        borderRight: `7px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
-      };
-      break;
-    case 'left':
-      posStyle = { top: '50%', right: 'calc(100% + 10px)', transform: 'translateY(-50%)' };
-      tailStyle = {
-        ...tailBase,
-        right: -7, top: '50%', transform: 'translateY(-50%)',
-        borderTop: '7px solid transparent',
-        borderBottom: '7px solid transparent',
-        borderLeft: `7px solid ${dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
-      };
-      break;
-  }
+  // Pre "top" bublinu — posunieme hore o výšku (translateY(-100%))
+  const isAbove = position === 'top' && coords && coords.top > 80;
 
   return (
-    <span
-      ref={ref}
-      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle', flexShrink: 0 }}
-    >
-      {/* Trigger button */}
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle', flexShrink: 0 }}>
       <button
+        ref={btnRef}
         type="button"
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        onClick={toggle}
         style={{
-          width: 16, height: 16,
+          width: 17, height: 17,
           borderRadius: '50%',
-          border: `1.5px solid ${open
-            ? '#f97316'
-            : (dark ? 'rgba(255,255,255,0.25)' : '#d1d5db')}`,
-          background: open
-            ? 'rgba(249,115,22,0.15)'
-            : (dark ? 'rgba(255,255,255,0.06)' : '#f9fafb'),
+          border: `1.5px solid ${open ? '#f97316' : (dark ? 'rgba(255,255,255,0.25)' : '#d1d5db')}`,
+          background: open ? 'rgba(249,115,22,0.15)' : (dark ? 'rgba(255,255,255,0.06)' : '#f9fafb'),
           color: open ? '#f97316' : (dark ? 'rgba(255,255,255,0.4)' : '#9ca3af'),
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: 700,
           cursor: 'pointer',
           display: 'flex',
@@ -139,11 +102,32 @@ export function HelpBubble({ text, position = 'top' }: Props) {
         ?
       </button>
 
-      {/* Bubble */}
-      {open && (
-        <span style={{ ...bubbleStyle, ...posStyle }}>
+      {open && coords && (
+        <span
+          style={{
+            position: 'fixed',
+            top: isAbove ? coords.top : coords.top,
+            left: coords.left,
+            transform: isAbove ? 'translateY(-100%)' : undefined,
+            zIndex: 9999,
+            background: bubbleBg,
+            border: `1px solid ${bubbleBd}`,
+            borderRadius: 12,
+            padding: '10px 14px',
+            fontSize: 12,
+            lineHeight: 1.55,
+            color: bubbleText,
+            width: bubbleW,
+            boxShadow: dark
+              ? '0 8px 32px rgba(0,0,0,0.55)'
+              : '0 8px 32px rgba(0,0,0,0.14)',
+            whiteSpace: 'normal',
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 400,
+            pointerEvents: 'none',
+          }}
+        >
           {text}
-          <span style={tailStyle} />
         </span>
       )}
     </span>

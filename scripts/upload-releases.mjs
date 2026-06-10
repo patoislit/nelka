@@ -23,7 +23,7 @@ if (!existsSync(SA_PATH)) {
 }
 
 const sa = JSON.parse(readFileSync(SA_PATH, 'utf8'));
-const BUCKET = 'nelka-87b28.firebasestorage.app';
+const BUCKET = 'nelka-87b28.appspot.com';
 
 // Získaj access token cez JWT
 import { createSign } from 'crypto';

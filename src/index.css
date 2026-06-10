@@ -191,4 +191,20 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 @media (max-width: 640px) {
   .page-pad-warehouse { padding: 16px 12px !important; }
   .page-pad-double    { padding: 16px 12px !important; }
+  .page-pad-tax       { padding: 16px 12px !important; }
+}
+
+/* ── Tax detail grid (2-col → 1-col na mobile) ──────────────────────────── */
+.tax-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 640px) {
+  .tax-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .tax-detail-grid > div:first-child {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+  }
 }

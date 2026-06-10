@@ -405,7 +405,7 @@ export function DoubleTransactions({ companyId, userId }: Props) {
 
         {/* ── OBRATOVÁ PREDVAHA ── */}
         {tab === 'accounts' && (
-          <div style={{ borderRadius: 16, background: surface, border: `1px solid ${border}`, overflow: 'hidden' }}>
+          <div className="warehouse-table-scroll" style={{ borderRadius: 16, background: surface, border: `1px solid ${border}` }}>
             {accountsWithBalance.length === 0 ? (
               <div style={{ padding: '48px 24px', textAlign: 'center', color: muted, fontSize: 14 }}>Žiadne záznamy</div>
             ) : (

@@ -204,7 +204,7 @@ export function TaxPage() {
   }
 
   return (
-    <div style={{ minHeight: '100%', background: pageBg, fontFamily: "'Inter', system-ui, sans-serif", padding: '28px 24px' }}>
+    <div className="page-pad-tax" style={{ minHeight: '100%', background: pageBg, fontFamily: "'Inter', system-ui, sans-serif", padding: '28px 24px' }}>
       <div style={{ maxWidth: 820, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* ── Hlavička ── */}
@@ -384,7 +384,7 @@ export function TaxPage() {
             </button>
 
             {showDetail && (
-              <div style={{ borderTop: `1px solid ${border}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+              <div className="tax-detail-grid" style={{ borderTop: `1px solid ${border}` }}>
                 {/* Príjmy/Výnosy */}
                 <div style={{ borderRight: `1px solid ${border}` }}>
                   <div style={{ padding: '12px 20px', background: dark ? 'rgba(16,185,129,0.06)' : '#f0fdf4', fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
