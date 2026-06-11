@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Globe, Palette, Building2, HardDrive, Bell, HelpCircle, Info, Sun, Moon, Monitor, Download, Upload, Smartphone } from 'lucide-react';
+import { Globe, Palette, Building2, HardDrive, Bell, BellOff, BellRing, HelpCircle, Info, Sun, Moon, Monitor, Download, Upload, Smartphone } from 'lucide-react';
+import { requestNotificationPermission, getNotificationPermission } from '../../utils/browserNotifications';
 import { useThemeStore, useDark } from '../../store/themeStore';
 import type { ThemeMode } from '../../store/themeStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -84,7 +85,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const dark = useDark();
   const { mode, setMode } = useThemeStore();
-  const { showTooltips, notifyErrors, notifyDeadlines, setShowTooltips, setNotifyErrors, setNotifyDeadlines, resetHints } = useSettingsStore();
+  const { showTooltips, notifyErrors, notifyDeadlines, notifyBrowser, setShowTooltips, setNotifyErrors, setNotifyDeadlines, setNotifyBrowser, resetHints } = useSettingsStore();
   const { getActiveCompany, setActiveCompany } = useCompanyStore();
   const { simpleTransactions, journalEntries } = useTransactionStore();
   const { invoices } = useInvoiceStore();
@@ -94,6 +95,14 @@ export function SettingsPage() {
   const allCompanies = useCompanyStore((s) => s.companies);
   const importRef = useRef<HTMLInputElement>(null);
   const [importMsg, setImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [notifPermission, setNotifPermission] = useState<string>(() => getNotificationPermission());
+
+  async function handleRequestPermission() {
+    const result = await requestNotificationPermission();
+    setNotifPermission(result);
+    if (result === 'granted') setNotifyBrowser(true);
+    else setNotifyBrowser(false);
+  }
 
   // PWA install prompt
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -362,6 +371,65 @@ export function SettingsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ToggleSwitch checked={notifyErrors} onChange={setNotifyErrors} label={t('settings.notifications.errors')} />
             <ToggleSwitch checked={notifyDeadlines} onChange={setNotifyDeadlines} label={t('settings.notifications.deadlines')} />
+
+            <div style={{ height: 1, background: dark ? 'rgba(255,255,255,0.06)' : '#f3f4f6' }} />
+
+            {/* Browser / OS notifications */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {notifPermission === 'granted'
+                    ? <BellRing size={15} color="#10b981" />
+                    : notifPermission === 'denied'
+                    ? <BellOff size={15} color="#ef4444" />
+                    : <Bell size={15} color={muted} />}
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: dark ? 'rgba(255,255,255,0.85)' : '#1a1a2e', margin: 0 }}>
+                      {t('settings.notifications.browser')}
+                    </p>
+                    <p style={{ fontSize: 11, color: muted, margin: '2px 0 0' }}>
+                      {notifPermission === 'granted'
+                        ? t('settings.notifications.browser_granted')
+                        : notifPermission === 'denied'
+                        ? t('settings.notifications.browser_denied')
+                        : t('settings.notifications.browser_desc')}
+                    </p>
+                  </div>
+                </div>
+
+                {notifPermission === 'granted' ? (
+                  <button
+                    onClick={() => setNotifyBrowser(!notifyBrowser)}
+                    style={{
+                      width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0,
+                      background: notifyBrowser ? '#f97316' : (dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'),
+                      position: 'relative', transition: 'background 0.2s ease',
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute', top: 3, left: notifyBrowser ? 23 : 3,
+                      width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                      transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }} />
+                  </button>
+                ) : notifPermission === 'unsupported' ? (
+                  <span style={{ fontSize: 11, color: muted }}>{t('settings.notifications.browser_unsupported')}</span>
+                ) : notifPermission === 'denied' ? (
+                  <span style={{ fontSize: 11, color: '#ef4444' }}>{t('settings.notifications.browser_denied_hint')}</span>
+                ) : (
+                  <button
+                    onClick={handleRequestPermission}
+                    style={{
+                      padding: '7px 14px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                      background: '#ec4899', color: '#fff', fontSize: 12, fontWeight: 600,
+                      fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
+                    }}
+                  >
+                    {t('settings.notifications.browser_grant')}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </Card>
 

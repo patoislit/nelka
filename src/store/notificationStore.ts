@@ -1,5 +1,18 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { showBrowserNotification } from '../utils/browserNotifications';
+
+function isBrowserNotifyEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem('nelka_settings');
+    if (!raw) return false;
+    return JSON.parse(raw)?.state?.notifyBrowser === true;
+  } catch { return false; }
+}
+
+function currentLang(): string {
+  return localStorage.getItem('nelka_lang') || 'sk';
+}
 
 export interface AppNotification {
   id: string;
@@ -30,8 +43,27 @@ export const useNotificationStore = create<NotificationStore>()(
       notifications: [],
 
       addNotification: (n) => {
+        // Deduplicate: skip if same notification was added in the last 24 hours
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        const duplicate = get().notifications.find(
+          (x) =>
+            x.companyId === n.companyId &&
+            x.title === n.title &&
+            x.body === n.body &&
+            !x.dismissedAt &&
+            new Date(x.createdAt).getTime() > cutoff
+        );
+        if (duplicate) return;
+
         const notif: AppNotification = { ...n, id: crypto.randomUUID(), createdAt: new Date().toISOString(), read: false };
         set((s) => ({ notifications: [notif, ...s.notifications] }));
+
+        if (isBrowserNotifyEnabled()) {
+          const lang = currentLang();
+          const title = lang === 'en' ? n.titleEn : n.title;
+          const body = lang === 'en' ? n.bodyEn : n.body;
+          showBrowserNotification(title, body);
+        }
       },
 
       markRead: (id) => {
