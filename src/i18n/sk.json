@@ -112,7 +112,7 @@
     "profile": { "title": "Profil a účet", "desc": "Spravujte svoje prihlasovacie údaje a osobné informácie", "name": "Meno", "email": "E-mail", "new_password": "Nové heslo", "save": "Uložiť zmeny", "logout": "Odhlásiť sa" },
     "companies": { "title": "Firmy", "desc": "Môžete spravovať viacero firiem pod jedným účtom", "manage": "Spravovať firmy", "active": "Aktívna" },
     "backup": { "title": "Zálohovanie a export", "desc": "Pravidelne zálohujte svoje účtovné dáta", "export_json": "Exportovať JSON", "export_excel": "Export Excel (čoskoro)", "import": "Importovať zálohu", "import_hint": "Podporovaný formát: .json" },
-    "notifications": { "title": "Oznámenia", "desc": "Upozornenia na termíny a chyby v účtovaní", "errors": "Chyby v účtovaní", "deadlines": "Blížiace sa termíny (DPH, uzávierky)" },
+    "notifications": { "title": "Oznámenia", "desc": "Upozornenia na termíny a chyby v účtovaní", "errors": "Chyby v účtovaní", "deadlines": "Blížiace sa termíny (DPH, uzávierky)", "browser": "Upozornenia zariadenia", "browser_desc": "Notifikácie pre sklad, faktúry a DPH — aj pri zatvorenej aplikácii", "browser_grant": "Povoliť", "browser_granted": "Povolené — notifikácie chodia aj pri zatvorenej aplikácii", "browser_denied": "Zablokované prehliadačom", "browser_denied_hint": "Odblokujte v nastaveniach prehliadača", "browser_unsupported": "Nepodporované" },
     "help": { "title": "Nápoveda", "desc": "Sprievodné lišty a návody pre začiatočníkov", "tooltips": "Zobraziť nápovedy a tooltipy", "reset": "Resetovať nápovedy" },
     "about": { "title": "O aplikácii", "desc": "Verzia a technická podpora", "version": "Verzia", "support": "Podpora", "support_email": "podpora@nelka.sk", "license": "Licencia", "license_type": "MIT License" }
   },

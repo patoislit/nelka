@@ -114,7 +114,7 @@
     "profile": { "title": "Profile & Account", "desc": "Manage your login credentials and personal information", "name": "Name", "email": "E-mail", "new_password": "New Password", "save": "Save Changes", "logout": "Sign Out" },
     "companies": { "title": "Companies", "desc": "You can manage multiple companies under one account", "manage": "Manage Companies", "active": "Active" },
     "backup": { "title": "Backup & Export", "desc": "Regularly back up your accounting data", "export_json": "Export JSON", "export_excel": "Export Excel (soon)", "import": "Import backup", "import_hint": "Supported format: .json" },
-    "notifications": { "title": "Notifications", "desc": "Alerts for deadlines and accounting errors", "errors": "Accounting errors", "deadlines": "Upcoming deadlines (VAT, closings)" },
+    "notifications": { "title": "Notifications", "desc": "Alerts for deadlines and accounting errors", "errors": "Accounting errors", "deadlines": "Upcoming deadlines (VAT, closings)", "browser": "Device notifications", "browser_desc": "Notifications for stock, invoices and VAT — even when the app is closed", "browser_grant": "Allow", "browser_granted": "Allowed — notifications work even when the app is closed", "browser_denied": "Blocked by browser", "browser_denied_hint": "Unblock in browser settings", "browser_unsupported": "Not supported" },
     "help": { "title": "Help", "desc": "Guide bars and tutorials for beginners", "tooltips": "Show hints and tooltips", "reset": "Reset hints" },
     "about": { "title": "About", "desc": "Version and technical support", "version": "Version", "support": "Support", "support_email": "support@nelka.sk", "license": "License", "license_type": "MIT License" }
   },

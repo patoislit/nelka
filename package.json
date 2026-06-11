@@ -46,20 +46,26 @@
       "target": [
         {
           "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "arch": ["universal"]
         }
       ],
       "icon": "public/icons/icon-512.png",
       "category": "public.app-category.finance",
-      "darkModeSupport": true
+      "darkModeSupport": true,
+      "identity": null,
+      "gatekeeperAssess": false,
+      "entitlements": null,
+      "entitlementsInherit": null
     },
     "dmg": {
       "title": "Nelka",
       "backgroundColor": "#0c0c0e",
-      "artifactName": "Nelka-Mac.dmg"
+      "artifactName": "Nelka-Mac.dmg",
+      "window": { "width": 540, "height": 380 },
+      "contents": [
+        { "x": 150, "y": 185, "type": "file" },
+        { "x": 390, "y": 185, "type": "link", "path": "/Applications" }
+      ]
     },
     "linux": {
       "target": [
@@ -108,6 +114,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
-    "wait-on": "^9.0.10"
+    "wait-on": "^9.0.10",
+    "web-push": "^3.6.7"
   }
 }

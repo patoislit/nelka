@@ -27,7 +27,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['push-sw.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

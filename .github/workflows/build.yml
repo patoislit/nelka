@@ -47,8 +47,10 @@ jobs:
       - name: Build Vite (React app)
         run: npm run build
 
-      - name: Build Mac
+      - name: Build Mac (universal — Intel + Apple Silicon)
         run: npx electron-builder --mac --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload Mac artifact
         uses: actions/upload-artifact@v4
@@ -88,8 +90,19 @@ jobs:
           name: "Nelka – najnovšia verzia"
           body: |
             ## Nelka ${{ github.ref_name }}
-            - **Windows** — stiahni `Nelka-Windows.exe`, spusti dvojklikom (portable, nevyžaduje inštaláciu)
-            - **Mac** — stiahni `Nelka-Mac.dmg`, otvor a presuň do Applications
+
+            ### Windows
+            Stiahni `Nelka-Windows.exe` a spusti dvojklikom (portable, nevyžaduje inštaláciu).
+
+            ### Mac (Intel + Apple Silicon)
+            1. Stiahni `Nelka-Mac.dmg`
+            2. Otvor súbor — zobrazí sa okno s ikonou Nelka a šípkou na Applications
+            3. Presuň ikonu Nelka do Applications
+            4. **Zavrí (eject) DMG disk** — klikni pravým tlačidlom na disk na ploche → Vysunúť, alebo ho pretiahni do koša
+            5. Otvor Finder → Applications → Nelka
+            6. **Prvé spustenie:** macOS zablokuje appku pretože nie je z App Store → otvor **System Settings → Privacy & Security**, zoskoč nadol a klikni **"Open Anyway"** → v dialógu klikni **Open**
+
+            > Appka nie je podpísaná Apple certifikátom — preto macOS varuje. Je to bezpečné, zdrojový kód je verejný na GitHube.
 
             **Web app:** https://nelka-87b28.web.app
           files: |

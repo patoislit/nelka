@@ -6,6 +6,8 @@ import { useTransactionStore } from './store/transactionStore';
 import { useInvoiceStore } from './store/invoiceStore';
 import { useWarehouseStore } from './store/warehouseStore';
 import { getLocalUserId, getDisplayName } from './lib/firebase';
+import { ensurePushSubscription } from './lib/push';
+import { useSettingsStore } from './store/settingsStore';
 import { useAuthStore } from './store/authStore';
 import { NameLoginPage } from './pages/Auth/NameLoginPage';
 import { AppShell } from './components/layout/AppShell';
@@ -70,6 +72,13 @@ function AppLoader() {
     ]).catch((e) => {
       setFirebaseErr(String(e?.message ?? e));
     }).finally(() => setReady(true));
+  }, []);
+
+  // Re-sync push subscription (endpoints can rotate, Firestore doc may be missing)
+  useEffect(() => {
+    if (useSettingsStore.getState().notifyBrowser && 'Notification' in window && Notification.permission === 'granted') {
+      ensurePushSubscription();
+    }
   }, []);
 
   // Sync display name into authStore so DashboardPage can show it
