@@ -48,16 +48,22 @@ jobs:
       - name: Build Vite (React app)
         run: npm run build
 
-      - name: Build Mac (universal — Intel + Apple Silicon)
+      - name: Build Mac (Intel x64 + Apple Silicon arm64)
         run: npx electron-builder --mac --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload Mac artifact
+      - name: Upload Mac Intel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mac
-          path: release/Nelka-Mac.dmg
+          name: mac-intel
+          path: release/Nelka-Mac-x64.dmg
+
+      - name: Upload Mac Apple Silicon artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm
+          path: release/Nelka-Mac-arm64.dmg
 
   release:
     needs: [build-windows, build-mac]
@@ -73,10 +79,16 @@ jobs:
           name: windows
           path: artifacts
 
-      - name: Download Mac
+      - name: Download Mac Intel
         uses: actions/download-artifact@v4
         with:
-          name: mac
+          name: mac-intel
+          path: artifacts
+
+      - name: Download Mac Apple Silicon
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-arm
           path: artifacts
 
       - name: Delete old latest release
@@ -95,20 +107,25 @@ jobs:
             ### Windows
             Stiahni `Nelka-Windows.exe` a spusti dvojklikom (portable, nevyžaduje inštaláciu).
 
-            ### Mac (Intel + Apple Silicon)
-            1. Stiahni `Nelka-Mac.dmg`
-            2. Otvor súbor — zobrazí sa okno s ikonou Nelka a šípkou na Applications
-            3. Presuň ikonu Nelka do Applications
-            4. **Zavrí (eject) DMG disk** — klikni pravým tlačidlom na disk na ploche → Vysunúť, alebo ho pretiahni do koša
-            5. Otvor Finder → Applications → Nelka
-            6. **Prvé spustenie:** macOS zablokuje appku pretože nie je z App Store → otvor **System Settings → Privacy & Security**, zoskoč nadol a klikni **"Open Anyway"** → v dialógu klikni **Open**
+            ### Mac
+            - **Apple Silicon (M1/M2/M3/M4)** → stiahni `Nelka-Mac-arm64.dmg`
+            - **Intel** → stiahni `Nelka-Mac-x64.dmg`
 
-            > Appka nie je podpísaná Apple certifikátom — preto macOS varuje. Je to bezpečné, zdrojový kód je verejný na GitHube.
+            **Ako zistiť ktorý Mac máš:** Apple menu () → About This Mac → Chip
+            - Ak vidíš "Apple M..." → stiahni arm64
+            - Ak vidíš "Intel" → stiahni x64
+
+            **Inštalácia:**
+            1. Otvor DMG → presuň Nelka do Applications
+            2. Eject DMG (normálne, ignoruj)
+            3. Finder → Applications → Nelka → **pravý klik → Open** (len prvý raz)
+            4. Ak macOS blokuje: System Settings → Privacy & Security → **Open Anyway**
 
             **Web app:** https://nelka-87b28.web.app
           files: |
             artifacts/Nelka-Windows.exe
-            artifacts/Nelka-Mac.dmg
+            artifacts/Nelka-Mac-x64.dmg
+            artifacts/Nelka-Mac-arm64.dmg
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
