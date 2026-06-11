@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Globe, Palette, Building2, HardDrive, Bell, BellOff, BellRing, HelpCircle, Info, Sun, Moon, Monitor, Download, Upload, Smartphone } from 'lucide-react';
 import { requestNotificationPermission, getNotificationPermission } from '../../utils/browserNotifications';
+import { ensurePushSubscription, removePushSubscription } from '../../lib/push';
 import { useThemeStore, useDark } from '../../store/themeStore';
 import type { ThemeMode } from '../../store/themeStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -100,8 +101,18 @@ export function SettingsPage() {
   async function handleRequestPermission() {
     const result = await requestNotificationPermission();
     setNotifPermission(result);
-    if (result === 'granted') setNotifyBrowser(true);
-    else setNotifyBrowser(false);
+    if (result === 'granted') {
+      setNotifyBrowser(true);
+      ensurePushSubscription();
+    } else {
+      setNotifyBrowser(false);
+    }
+  }
+
+  function handleToggleBrowser(v: boolean) {
+    setNotifyBrowser(v);
+    if (v) ensurePushSubscription();
+    else removePushSubscription();
   }
 
   // PWA install prompt
@@ -399,7 +410,7 @@ export function SettingsPage() {
 
                 {notifPermission === 'granted' ? (
                   <button
-                    onClick={() => setNotifyBrowser(!notifyBrowser)}
+                    onClick={() => handleToggleBrowser(!notifyBrowser)}
                     style={{
                       width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0,
                       background: notifyBrowser ? '#f97316' : (dark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'),
