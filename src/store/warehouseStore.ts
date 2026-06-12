@@ -75,7 +75,7 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
   addMovement(data) {
     const userId = getLocalUserId();
     const movement: StockMovement = { ...data, id: crypto.randomUUID() };
-    // unit price = total / quantity
+    // jednotková cena = spolu / množstvo
     const newUnitPriceCents = data.quantity > 0 && data.priceCents > 0
       ? Math.round(data.priceCents / data.quantity)
       : 0;
@@ -87,15 +87,18 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
         if (data.type === 'in')       qty += data.quantity;
         else if (data.type === 'out') qty -= data.quantity;
         else                          qty  = data.quantity;
-        const salePriceCents = newUnitPriceCents > 0 ? newUnitPriceCents : it.salePriceCents;
-        return { ...it, quantity: qty, salePriceCents };
+        // príjem aktualizuje nákupnú cenu, výdaj predajnú; úprava ceny nemení
+        const purchasePriceCents = data.type === 'in' && newUnitPriceCents > 0 ? newUnitPriceCents : it.purchasePriceCents;
+        const salePriceCents = data.type === 'out' && newUnitPriceCents > 0 ? newUnitPriceCents : it.salePriceCents;
+        return { ...it, quantity: qty, purchasePriceCents, salePriceCents };
       });
       return { items, movements: [movement, ...s.movements] };
     });
     const updatedItem = get().items.find((it) => it.id === data.itemId);
     if (updatedItem) {
       const patch: Record<string, unknown> = { quantity: updatedItem.quantity };
-      if (newUnitPriceCents > 0) patch.salePriceCents = updatedItem.salePriceCents;
+      if (newUnitPriceCents > 0 && data.type === 'in')  patch.purchasePriceCents = updatedItem.purchasePriceCents;
+      if (newUnitPriceCents > 0 && data.type === 'out') patch.salePriceCents = updatedItem.salePriceCents;
       updateDoc(doc(db, 'warehouse_items', data.itemId), patch)
         .catch((e) => console.error('qty update:', e));
     }

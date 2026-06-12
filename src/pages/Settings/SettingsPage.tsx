@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Globe, Palette, Building2, HardDrive, Bell, BellOff, BellRing, HelpCircle, Info, Sun, Moon, Monitor, Download, Upload, Smartphone } from 'lucide-react';
 import { requestNotificationPermission, getNotificationPermission } from '../../utils/browserNotifications';
 import { ensurePushSubscription, removePushSubscription } from '../../lib/push';
+import { writeBatch, doc as fsDoc } from 'firebase/firestore';
+import { db, getLocalUserId } from '../../lib/firebase';
 import { useThemeStore, useDark } from '../../store/themeStore';
 import type { ThemeMode } from '../../store/themeStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -90,7 +92,7 @@ export function SettingsPage() {
   const { getActiveCompany, setActiveCompany } = useCompanyStore();
   const { simpleTransactions, journalEntries } = useTransactionStore();
   const { invoices } = useInvoiceStore();
-  const { items: warehouseItems } = useWarehouseStore();
+  const { items: warehouseItems, movements: stockMovements } = useWarehouseStore();
 
   const activeCompany = getActiveCompany();
   const allCompanies = useCompanyStore((s) => s.companies);
@@ -144,13 +146,14 @@ export function SettingsPage() {
 
   function exportData() {
     const data = {
-      version: '2.0.0',
+      version: '2.1.0',
       exportedAt: new Date().toISOString(),
       companies: allCompanies,
       simpleTransactions,
       journalEntries,
       invoices,
       warehouseItems,
+      stockMovements,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = Object.assign(document.createElement('a'), {
@@ -161,35 +164,58 @@ export function SettingsPage() {
     URL.revokeObjectURL(a.href);
   }
 
+  /** Zapíše obnovené záznamy aj do Firestore — bez toho by obnova zmizla po refreshi. */
+  async function persistToFirestore(col: string, records: { id: string }[]) {
+    const userId = getLocalUserId();
+    // po dávkach max 400 (limit writeBatch je 500)
+    for (let i = 0; i < records.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const rec of records.slice(i, i + 400)) {
+        if (!rec.id) continue;
+        const { ownerId: _ownerId, ...rest } = rec as { id: string; ownerId?: string };
+        batch.set(fsDoc(db, col, rec.id), { userId, ...rest });
+      }
+      await batch.commit();
+    }
+  }
+
   function importBackup(file: File) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const raw = e.target?.result as string;
         const data = JSON.parse(raw);
         if (data.version === undefined) throw new Error('Neplatny format suboru (chyba verzia)');
 
-        // Restore companies
-        if (Array.isArray(data.companies)) {
-          useCompanyStore.setState({ companies: data.companies });
+        const companies = Array.isArray(data.companies) ? data.companies : [];
+        const simple = Array.isArray(data.simpleTransactions) ? data.simpleTransactions : [];
+        const journal = Array.isArray(data.journalEntries) ? data.journalEntries : [];
+        const invs = Array.isArray(data.invoices) ? data.invoices : [];
+        const whItems = Array.isArray(data.warehouseItems) ? data.warehouseItems : [];
+        const whMoves = Array.isArray(data.stockMovements) ? data.stockMovements : [];
+
+        // 1. Trvalý zápis do cloudu
+        await persistToFirestore('companies', companies);
+        await persistToFirestore('simple_transactions', simple);
+        await persistToFirestore('journal_entries', journal);
+        await persistToFirestore('invoices', invs);
+        await persistToFirestore('warehouse_items', whItems);
+        await persistToFirestore('stock_movements', whMoves);
+
+        // 2. Okamžitá aktualizácia UI
+        if (companies.length) useCompanyStore.setState({ companies });
+        if (simple.length || journal.length) {
+          useTransactionStore.setState({ simpleTransactions: simple, journalEntries: journal });
         }
-        // Restore transactions (v2 structure)
-        if (Array.isArray(data.simpleTransactions) || Array.isArray(data.journalEntries)) {
-          useTransactionStore.setState({
-            simpleTransactions: Array.isArray(data.simpleTransactions) ? data.simpleTransactions : [],
-            journalEntries: Array.isArray(data.journalEntries) ? data.journalEntries : [],
-          });
-        }
-        // Restore invoices
-        if (Array.isArray(data.invoices)) {
-          useInvoiceStore.setState({ invoices: data.invoices });
-        }
-        // Restore warehouse
-        if (Array.isArray(data.warehouseItems)) {
-          useWarehouseStore.setState({ items: data.warehouseItems });
+        if (invs.length) useInvoiceStore.setState({ invoices: invs });
+        if (whItems.length || whMoves.length) {
+          useWarehouseStore.setState((s) => ({
+            items: whItems.length ? whItems : s.items,
+            movements: whMoves.length ? whMoves : s.movements,
+          }));
         }
 
-        setImportMsg({ type: 'success', text: 'Zaloha bola uspesne obnovena.' });
+        setImportMsg({ type: 'success', text: 'Zaloha bola obnovena a ulozena do cloudu.' });
         setTimeout(() => setImportMsg(null), 5000);
       } catch (err) {
         setImportMsg({ type: 'error', text: `Chyba: ${err instanceof Error ? err.message : 'Neplatny subor'}` });

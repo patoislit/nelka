@@ -37,7 +37,7 @@ export function WarehousePage() {
   const dark = useDark();
   const { getItemsForCompany, deleteItem, getMovementsForCompany } = useWarehouseStore();
   const { getActiveCompany } = useCompanyStore();
-  const { addNotification } = useNotificationStore();
+  const { addNotification, notifications } = useNotificationStore();
 
   const company = getActiveCompany();
   const [tab, setTab] = useState<Tab>('items');
@@ -52,11 +52,15 @@ export function WarehousePage() {
     const items = getItemsForCompany(company.id);
     items.forEach((item) => {
       if (item.quantity <= item.lowStockThreshold) {
+        const body = t('warehouse.low_stock_body').replace('{name}', item.name).replace('{qty}', String(item.quantity)).replace('{unit}', item.unit);
+        // nehlás znova, ak rovnaká notifikácia už existuje
+        const alreadyExists = notifications.some((n) => n.companyId === company.id && n.body === body && !n.dismissedAt);
+        if (alreadyExists) return;
         addNotification({
           companyId: company.id,
           type: 'warning',
           title: t('warehouse.low_stock'),
-          body: t('warehouse.low_stock_body').replace('{name}', item.name).replace('{qty}', String(item.quantity)).replace('{unit}', item.unit),
+          body,
           titleEn: 'Low stock',
           bodyEn: `Low stock: ${item.name} (${item.quantity} ${item.unit})`,
         });
@@ -86,7 +90,9 @@ export function WarehousePage() {
         it.code.toLowerCase().includes(search.toLowerCase())
       )
     : items;
-  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.salePriceCents, 0);
+  // Účtovná hodnota zásob = nákupné (obstarávacie) ceny
+  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.purchasePriceCents, 0);
+  const totalSaleValue = items.reduce((sum, it) => sum + it.quantity * it.salePriceCents, 0);
 
   const exportPdf = () => {
     const doc = new jsPDF();
@@ -96,8 +102,8 @@ export function WarehousePage() {
     doc.text(pd(`${t('warehouse.total_value')}: ${centsToEur(totalValue)} EUR`), 14, 26);
     autoTable(doc, {
       startY: 32,
-      head: [[pd(t('warehouse.code')), pd(t('warehouse.name')), pd(t('warehouse.unit')), pd(t('warehouse.quantity')), pd(t('warehouse.price'))]],
-      body: items.map((it) => [pd(it.code), pd(it.name), pd(it.unit), it.quantity, centsToEur(it.salePriceCents) + ' EUR']),
+      head: [[pd(t('warehouse.code')), pd(t('warehouse.name')), pd(t('warehouse.unit')), pd(t('warehouse.quantity')), pd(t('warehouse.purchase_price')), pd(t('warehouse.sale_price'))]],
+      body: items.map((it) => [pd(it.code), pd(it.name), pd(it.unit), it.quantity, centsToEur(it.purchasePriceCents) + ' EUR', centsToEur(it.salePriceCents) + ' EUR']),
       styles: { fontSize: 9 },
     });
     doc.save(`sklad-${company.name}.pdf`);
@@ -106,7 +112,7 @@ export function WarehousePage() {
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([
       [t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.purchase_price') + ' €', t('warehouse.sale_price') + ' €'],
-      ...items.map((it) => [it.code, it.name, it.unit, it.quantity, (it.salePriceCents / 100).toFixed(2)]),
+      ...items.map((it) => [it.code, it.name, it.unit, it.quantity, (it.purchasePriceCents / 100).toFixed(2), (it.salePriceCents / 100).toFixed(2)]),
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sklad');
@@ -207,10 +213,14 @@ export function WarehousePage() {
           </div>
 
           {/* Summary card */}
-          <div style={{ background: surface, borderRadius: 14, border: `1px solid ${border}`, padding: '16px 20px', marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: surface, borderRadius: 14, border: `1px solid ${border}`, padding: '16px 20px', marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('warehouse.total_value')}</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#f97316', marginTop: 2 }}>{centsToEur(totalValue)} €</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('warehouse.total_value_sale')}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981', marginTop: 2 }}>{centsToEur(totalSaleValue)} €</div>
             </div>
           </div>
 
