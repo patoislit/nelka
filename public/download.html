@@ -177,6 +177,34 @@
       border-top: 1px solid var(--border);
     }
 
+    /* Terminal one-liner */
+    .term-box {
+      position: relative;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 12px 12px 14px;
+      margin-top: 10px;
+    }
+    .term-code {
+      font-family: 'SF Mono', Consolas, monospace;
+      font-size: 10.5px; line-height: 1.6;
+      color: #4ade80;
+      white-space: nowrap;
+      overflow-x: auto;
+      display: block;
+      padding-right: 70px;
+      scrollbar-width: thin;
+    }
+    .term-copy {
+      position: absolute; top: 8px; right: 8px;
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 6px;
+      padding: 5px 10px; font-size: 10px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .term-copy:hover { opacity: 0.85; }
+
     /* FEATURES */
     .features-wrap {
       max-width: 620px; margin: 0 auto 80px;
@@ -286,20 +314,26 @@
     </a>
 
     <div class="mac-note" id="mac-fix">
-      <div class="mac-note-title">Prvé spustenie</div>
+      <div class="mac-note-title">Najjednoduchšia inštalácia — jeden príkaz</div>
       <div class="mac-step">
         <div class="mac-step-n">1</div>
-        <div>Presuň Nelka do <strong>Applications</strong></div>
+        <div>Otvor <strong>Terminál</strong> (Cmd + medzerník → napíš „Terminal")</div>
       </div>
       <div class="mac-step">
         <div class="mac-step-n">2</div>
-        <div><strong>Pravý klik</strong> na Nelka.app → <strong>Otvoriť</strong></div>
+        <div>Vlož tento príkaz a stlač <strong>Enter</strong> — stiahne, povolí a spustí appku:</div>
       </div>
-      <div class="mac-step">
-        <div class="mac-step-n">3</div>
-        <div>V dialógu klikni <strong>Otvoriť</strong> — hotovo</div>
+      <div class="term-box">
+        <code class="term-code" id="term-cmd">A=$(uname -m); [ "$A" = "arm64" ] &amp;&amp; F="Nelka-Mac-arm64.dmg" || F="Nelka-Mac-x64.dmg"; curl -L -o /tmp/$F "https://github.com/patoislit/nelka/releases/download/latest/$F" &amp;&amp; hdiutil attach /tmp/$F -nobrowse -mountpoint /Volumes/NelkaTmp &amp;&amp; rm -rf /Applications/Nelka.app &amp;&amp; cp -R /Volumes/NelkaTmp/Nelka.app /Applications/ &amp;&amp; hdiutil detach /Volumes/NelkaTmp &amp;&amp; xattr -cr /Applications/Nelka.app &amp;&amp; open /Applications/Nelka.app</code>
+        <button class="term-copy" onclick="copyCmd(this)">Kopírovať</button>
       </div>
-      <div class="mac-note-footer">Stačí raz. Potom sa spúšťa normálne dvojklikom.</div>
+      <div class="mac-note-footer">
+        Sám rozpozná typ čipu (Apple Silicon / Intel), nainštaluje do Applications a odstráni bezpečnostnú blokáciu.
+        Funguje aj pri aktualizácii na novú verziu.<br /><br />
+        <strong style="color:rgba(255,255,255,0.45)">Ručná cesta:</strong> ak si stiahol DMG tlačidlom vyššie a macOS appku zablokoval —
+        otvor <strong>Systémové nastavenia → Súkromie a bezpečnosť</strong>, zroluj dole a klikni <strong>„Otvoriť napriek tomu"</strong>.
+        (Starý trik s pravým klikom už na novom macOS nefunguje.)
+      </div>
     </div>
   </div>
 
@@ -356,6 +390,14 @@
     document.getElementById('mac-btn-x64').href = MAC_X64_URL;
     document.getElementById('mac-fix').style.display = 'block';
   });
+
+  function copyCmd(btn) {
+    const cmd = document.getElementById('term-cmd').textContent;
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = 'Skopírované ✓';
+      setTimeout(() => { btn.textContent = 'Kopírovať'; }, 2000);
+    });
+  }
 </script>
 
 </body>
