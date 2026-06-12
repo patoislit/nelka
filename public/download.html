@@ -7,6 +7,9 @@
   <meta name="description" content="Nelka Economics and Logistics – účtovný softvér pre slovenské firmy." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Manifest + ikona: umožňuje inštaláciu PWA priamo z tejto stránky -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -334,6 +337,47 @@
     </a>
   </div>
 
+  <!-- iPhone -->
+  <div class="dl-card">
+    <svg class="dl-os-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="2" width="12" height="20" rx="3" stroke="#f97316" stroke-width="1.8" fill="rgba(249,115,22,0.08)"/>
+      <circle cx="12" cy="18.5" r="1" fill="#f97316"/>
+    </svg>
+    <div class="dl-platform">Mobil · bez App Store</div>
+    <div class="dl-name">iPhone / iPad</div>
+    <div class="dl-desc">
+      Appka sa inštaluje priamo zo Safari — s ikonou a na celú obrazovku:<br /><br />
+      <strong style="color:rgba(255,255,255,0.7)">1.</strong> Otvor túto stránku v <strong style="color:rgba(255,255,255,0.7)">Safari</strong><br />
+      <strong style="color:rgba(255,255,255,0.7)">2.</strong> Ťukni na <strong style="color:rgba(255,255,255,0.7)">Zdieľať</strong> (štvorček so šípkou)<br />
+      <strong style="color:rgba(255,255,255,0.7)">3.</strong> <strong style="color:rgba(255,255,255,0.7)">Pridať na plochu</strong> — hotovo
+    </div>
+    <a class="dl-btn" href="https://nelka-87b28.web.app">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      Otvoriť appku
+    </a>
+  </div>
+
+  <!-- Android -->
+  <div class="dl-card">
+    <svg class="dl-os-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.2 8.5h9.6c.4 0 .7.3.7.7v7.1a1.7 1.7 0 0 1-1.7 1.7h-.6v2.3a1 1 0 1 1-2 0V18h-2.4v2.3a1 1 0 1 1-2 0V18h-.6a1.7 1.7 0 0 1-1.7-1.7V9.2c0-.4.3-.7.7-.7Z" fill="#f97316" opacity="0.85"/>
+      <path d="M7.5 7.5c.4-2 2.2-3.5 4.5-3.5s4.1 1.5 4.5 3.5h-9Z" fill="#f97316" opacity="0.85"/>
+      <circle cx="10" cy="6" r="0.5" fill="#0c0c0e"/><circle cx="14" cy="6" r="0.5" fill="#0c0c0e"/>
+      <rect x="3.4" y="9" width="2" height="6" rx="1" fill="#f97316" opacity="0.5"/>
+      <rect x="18.6" y="9" width="2" height="6" rx="1" fill="#f97316" opacity="0.5"/>
+    </svg>
+    <div class="dl-platform">Mobil · bez Google Play</div>
+    <div class="dl-name">Android</div>
+    <div class="dl-desc">Klikni na tlačidlo a appka sa nainštaluje ako z obchodu — vlastná ikona, celá obrazovka, notifikácie.</div>
+    <a class="dl-btn" href="#" id="android-install" onclick="installApp(event, this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Inštalovať appku
+    </a>
+    <div id="android-steps" style="display:none; margin-top:10px; font-size:11px; color:var(--muted); line-height:1.6">
+      Otvor túto stránku v <strong style="color:rgba(255,255,255,0.7)">Chrome</strong> na mobile → menu <strong style="color:rgba(255,255,255,0.7)">⋮</strong> → <strong style="color:rgba(255,255,255,0.7)">Pridať na plochu / Inštalovať aplikáciu</strong>
+    </div>
+  </div>
+
 </div>
 
 <!-- MAC INSTALL HELP (rozklikávacie) -->
@@ -426,6 +470,28 @@
       btn.textContent = 'Skopírované ✓';
       setTimeout(() => { btn.textContent = 'Kopírovať'; }, 2000);
     });
+  }
+
+  // PWA inštalácia (Android / Chrome) — natívny inštalačný dialóg
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installEvt = e;
+  });
+
+  async function installApp(event, btn) {
+    event.preventDefault();
+    if (installEvt) {
+      installEvt.prompt();
+      const result = await installEvt.userChoice;
+      if (result.outcome === 'accepted') {
+        btn.innerHTML = 'Nainštalované ✓';
+      }
+      installEvt = null;
+    } else {
+      // prompt nie je k dispozícii (iný prehliadač / už nainštalované) → ukáž návod
+      document.getElementById('android-steps').style.display = 'block';
+    }
   }
 </script>
 
