@@ -66,7 +66,7 @@
     /* HERO */
     .hero {
       text-align: center;
-      padding: 96px 24px 72px;
+      padding: 56px 24px 44px;
       max-width: 700px; margin: 0 auto;
     }
     .hero-label {
@@ -96,7 +96,7 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
-      max-width: 620px; margin: 0 auto 80px;
+      max-width: 620px; margin: 0 auto 14px;
       padding: 0 24px;
     }
     @media (max-width: 600px) {
@@ -146,12 +146,32 @@
     .dl-btn:hover { opacity: 0.87; }
     .dl-btn svg { flex-shrink: 0; }
 
-    /* Mac note */
-    .mac-note {
-      margin-top: 14px; padding: 14px;
-      background: var(--surface2);
+    /* Mac note — rozklikávacia sekcia pod kartami */
+    .mac-details {
+      max-width: 620px; margin: 0 auto 56px;
+      padding: 0 24px;
+    }
+    .mac-details details {
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px; display: none; width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .mac-details summary {
+      list-style: none; cursor: pointer;
+      padding: 16px 20px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+      user-select: none;
+    }
+    .mac-details summary::-webkit-details-marker { display: none; }
+    .mac-details summary .chev { margin-left: auto; color: var(--muted); transition: transform 0.2s; font-size: 11px; }
+    .mac-details details[open] summary .chev { transform: rotate(90deg); }
+    .mac-details summary .apple-ico { color: var(--orange); font-size: 15px; }
+    .mac-note {
+      padding: 4px 20px 18px;
+      border-top: 1px solid var(--border);
+      margin-top: 0; padding-top: 14px;
     }
     .mac-note-title {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -207,7 +227,7 @@
 
     /* FEATURES */
     .features-wrap {
-      max-width: 620px; margin: 0 auto 80px;
+      max-width: 620px; margin: 0 auto 48px;
       padding: 0 24px;
     }
     .features-title {
@@ -312,8 +332,19 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Intel Mac (x64)
     </a>
+  </div>
 
-    <div class="mac-note" id="mac-fix">
+</div>
+
+<!-- MAC INSTALL HELP (rozklikávacie) -->
+<div class="mac-details">
+  <details>
+    <summary>
+      <span class="apple-ico"></span>
+      macOS: inštalácia jedným príkazom a povolenie appky
+      <span class="chev">▶</span>
+    </summary>
+    <div class="mac-note">
       <div class="mac-note-title">Najjednoduchšia inštalácia — jeden príkaz</div>
       <div class="mac-step">
         <div class="mac-step-n">1</div>
@@ -335,8 +366,7 @@
         (Starý trik s pravým klikom už na novom macOS nefunguje.)
       </div>
     </div>
-  </div>
-
+  </details>
 </div>
 
 <!-- FEATURES -->
@@ -388,7 +418,6 @@
     if (WINDOWS_URL) document.getElementById('win-btn').href = WINDOWS_URL;
     document.getElementById('mac-btn-arm').href = MAC_ARM_URL;
     document.getElementById('mac-btn-x64').href = MAC_X64_URL;
-    document.getElementById('mac-fix').style.display = 'block';
   });
 
   function copyCmd(btn) {
