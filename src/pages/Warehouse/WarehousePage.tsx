@@ -90,9 +90,8 @@ export function WarehousePage() {
         it.code.toLowerCase().includes(search.toLowerCase())
       )
     : items;
-  // Účtovná hodnota zásob = nákupné (obstarávacie) ceny
-  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.purchasePriceCents, 0);
-  const totalSaleValue = items.reduce((sum, it) => sum + it.quantity * it.salePriceCents, 0);
+  // Hodnota skladu — predajné ceny
+  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.salePriceCents, 0);
 
   const exportPdf = () => {
     const doc = new jsPDF();
@@ -213,14 +212,10 @@ export function WarehousePage() {
           </div>
 
           {/* Summary card */}
-          <div style={{ background: surface, borderRadius: 14, border: `1px solid ${border}`, padding: '16px 20px', marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
+          <div style={{ background: surface, borderRadius: 14, border: `1px solid ${border}`, padding: '16px 20px', marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 12 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('warehouse.total_value')}</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#f97316', marginTop: 2 }}>{centsToEur(totalValue)} €</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('warehouse.total_value_sale')}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981', marginTop: 2 }}>{centsToEur(totalSaleValue)} €</div>
             </div>
           </div>
 
