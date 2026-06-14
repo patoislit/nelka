@@ -55,6 +55,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         background: '#0c0c0e',
         borderRight: '1px solid rgba(255,255,255,0.06)',
         fontFamily: "'Inter', system-ui, sans-serif",
+        // odsadenie pod stavový riadok (hodiny/výrez) na mobile; na desktope = 0
+        paddingTop: 'env(safe-area-inset-top)',
       }}
         className={`fixed lg:static top-0 left-0 h-full z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
