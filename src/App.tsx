@@ -11,6 +11,7 @@ import { useSettingsStore } from './store/settingsStore';
 import { useAuthStore } from './store/authStore';
 import { NameLoginPage } from './pages/Auth/NameLoginPage';
 import { AppShell } from './components/layout/AppShell';
+import { Logo } from './components/common/Logo';
 import { WelcomePage } from './pages/Welcome/WelcomePage';
 import { CompaniesPage } from './pages/Companies/CompaniesPage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -40,10 +41,8 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 function Splash() {
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0c0c0e', gap: 16 }}>
-      <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(249,115,22,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <path d="M4 24V4l8 10 8-10v20" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+      <div style={{ animation: 'splashPop 0.5s ease' }}>
+        <Logo variant="mark" size={60} />
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         {[0, 1, 2].map((i) => (
@@ -51,7 +50,7 @@ function Splash() {
         ))}
       </div>
       <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>Načítavam dáta…</p>
-      <style>{`@keyframes pulse { 0%,100%{transform:scale(0.7);opacity:0.4} 50%{transform:scale(1);opacity:1} }`}</style>
+      <style>{`@keyframes pulse { 0%,100%{transform:scale(0.7);opacity:0.4} 50%{transform:scale(1);opacity:1} } @keyframes splashPop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }`}</style>
     </div>
   );
 }
