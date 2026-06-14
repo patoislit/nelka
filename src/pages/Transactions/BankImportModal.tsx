@@ -284,7 +284,7 @@ export function BankImportModal({ open, onClose, companyId }: Props) {
           row.amountCents > 0 ? 'other_income' : guessCategory(row.description),
         amountCents: Math.abs(row.amountCents),
         note: 'Import z banky',
-      });
+      }, 'bulk'); // hromadný import → bez push notifikácie za každý riadok
     }
     setImportedCount(toImport.length);
     setStep('done');

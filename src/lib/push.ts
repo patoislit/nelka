@@ -25,6 +25,17 @@ function endpointDocId(endpoint: string): string {
   return `sub_${h1.toString(16)}${h2.toString(16)}`;
 }
 
+const ORIGIN_KEY = 'nelka_push_sub_id';
+
+/**
+ * ID push prihlásenia tohto zariadenia (ak má zapnuté notifikácie), inak ''.
+ * Pri vytvorení záznamu sa ním označí `_origin` — Cloud Function potom pošle
+ * upozornenie na VŠETKY zariadenia okrem toho, kde sa zmena spravila.
+ */
+export function deviceOrigin(): string {
+  try { return localStorage.getItem(ORIGIN_KEY) || ''; } catch { return ''; }
+}
+
 function getRegistration(): Promise<ServiceWorkerRegistration | null> {
   // navigator.serviceWorker.ready never resolves when no SW is registered (dev mode, Electron)
   return Promise.race([
@@ -48,7 +59,8 @@ export async function ensurePushSubscription(): Promise<boolean> {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
     const json = sub.toJSON();
-    await setDoc(doc(db, 'push_subscriptions', endpointDocId(sub.endpoint)), {
+    const subId = endpointDocId(sub.endpoint);
+    await setDoc(doc(db, 'push_subscriptions', subId), {
       userId: SHARED_ID,
       endpoint: sub.endpoint,
       keys: { p256dh: json.keys?.p256dh ?? '', auth: json.keys?.auth ?? '' },
@@ -56,6 +68,7 @@ export async function ensurePushSubscription(): Promise<boolean> {
       userAgent: navigator.userAgent,
       updatedAt: new Date().toISOString(),
     });
+    try { localStorage.setItem(ORIGIN_KEY, subId); } catch { /* ignore */ }
     return true;
   } catch (e) {
     console.error('push subscribe:', e);
@@ -73,6 +86,7 @@ export async function removePushSubscription(): Promise<void> {
       await deleteDoc(doc(db, 'push_subscriptions', endpointDocId(sub.endpoint))).catch(() => {});
       await sub.unsubscribe();
     }
+    try { localStorage.removeItem(ORIGIN_KEY); } catch { /* ignore */ }
   } catch (e) {
     console.error('push unsubscribe:', e);
   }

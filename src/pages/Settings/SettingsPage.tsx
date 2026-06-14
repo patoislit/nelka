@@ -173,7 +173,8 @@ export function SettingsPage() {
       for (const rec of records.slice(i, i + 400)) {
         if (!rec.id) continue;
         const { ownerId: _ownerId, ...rest } = rec as { id: string; ownerId?: string };
-        batch.set(fsDoc(db, col, rec.id), { userId, ...rest });
+        // _origin: 'bulk' → obnova zálohy nespustí lavínu push notifikácií
+        batch.set(fsDoc(db, col, rec.id), { userId, ...rest, _origin: 'bulk' });
       }
       await batch.commit();
     }

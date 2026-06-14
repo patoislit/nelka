@@ -12,6 +12,7 @@
  * Súkromný VAPID kľúč: Firebase secret VAPID_PRIVATE_KEY (nie je v gite).
  */
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const webpush = require('web-push');
@@ -48,6 +49,34 @@ function nextDphDeadline() {
 async function loadCollection(name) {
   const snap = await admin.firestore().collection(name).where('userId', '==', SHARED_ID).get();
   return snap.docs.map((d) => ({ _docId: d.id, ...d.data() }));
+}
+
+function eur(cents) {
+  return ((cents || 0) / 100).toLocaleString('sk-SK', { minimumFractionDigits: 2 }) + ' €';
+}
+
+/**
+ * Pošle Web Push na všetky prihlásené zariadenia okrem `excludeOrigin`
+ * (to je zariadenie, kde sa zmena spravila). Expirované odhlásenia zmaže.
+ */
+async function sendWebPush(payload, excludeOrigin) {
+  webpush.setVapidDetails('mailto:patnko.furiel@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY.value());
+  const db = admin.firestore();
+  const snap = await db.collection('push_subscriptions').where('userId', '==', SHARED_ID).get();
+  const body = JSON.stringify(payload);
+  await Promise.all(snap.docs.map(async (d) => {
+    if (excludeOrigin && d.id === excludeOrigin) return;
+    const r = d.data();
+    try {
+      await webpush.sendNotification({ endpoint: r.endpoint, keys: r.keys }, body);
+    } catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) {
+        await d.ref.delete().catch(() => {});
+      } else {
+        console.error('push send:', e.statusCode, e.body || e.message);
+      }
+    }
+  }));
 }
 
 function buildAlerts({ companies, items, invoices, journalEntries }) {
@@ -165,5 +194,76 @@ exports.businessAlerts = onSchedule(
     const now = new Date().toISOString();
     await Promise.all(alerts.map((a) => db.collection('push_log').doc(logId(a.key)).set({ key: a.key, sentAt: now })));
     console.log(`Hotovo. Odoslané: ${sent}, expirované odstránené: ${removed}`);
+  }
+);
+
+// ── Realtime triggery — push hneď pri pridaní (okrem zariadenia pôvodcu) ────────
+const trigOpts = { region: REGION, secrets: [VAPID_PRIVATE_KEY] };
+
+// Nová transakcia (jednoduché účtovníctvo)
+exports.onTransactionCreated = onDocumentCreated(
+  { document: 'simple_transactions/{id}', ...trigOpts },
+  async (event) => {
+    const d = event.data && event.data.data();
+    if (!d || d._origin === 'bulk') return;
+    const income = d.type === 'income';
+    await sendWebPush({
+      title: income ? '💰 Nový príjem' : '💸 Nový výdavok',
+      body: `${d.description || ''} — ${eur(d.amountCents)}`,
+      tag: `tx-${event.params.id}`,
+      url: '/',
+    }, d._origin);
+  }
+);
+
+// Nový účtovný zápis (podvojné účtovníctvo)
+exports.onJournalCreated = onDocumentCreated(
+  { document: 'journal_entries/{id}', ...trigOpts },
+  async (event) => {
+    const d = event.data && event.data.data();
+    if (!d || d._origin === 'bulk') return;
+    const sum = (d.lines || []).reduce((s, l) => s + (l.debitCents || 0), 0);
+    await sendWebPush({
+      title: '📒 Nový účtovný zápis',
+      body: `${d.description || `Zápis #${d.entryNo || ''}`} — ${eur(sum)}`,
+      tag: `je-${event.params.id}`,
+      url: '/',
+    }, d._origin);
+  }
+);
+
+// Pohyb na sklade (príjem / výdaj / úprava)
+exports.onMovementCreated = onDocumentCreated(
+  { document: 'stock_movements/{id}', ...trigOpts },
+  async (event) => {
+    const d = event.data && event.data.data();
+    if (!d || d._origin === 'bulk') return;
+    let name = '', unit = 'ks';
+    try {
+      const it = await admin.firestore().collection('warehouse_items').doc(d.itemId).get();
+      if (it.exists) { name = it.data().name || ''; unit = it.data().unit || 'ks'; }
+    } catch { /* ignore */ }
+    const label = d.type === 'in' ? '📥 Príjem na sklad' : d.type === 'out' ? '📤 Výdaj zo skladu' : '✏️ Úprava skladu';
+    await sendWebPush({
+      title: label,
+      body: `${name}${name ? ': ' : ''}${d.quantity || 0} ${unit}`,
+      tag: `mv-${event.params.id}`,
+      url: '/',
+    }, d._origin);
+  }
+);
+
+// Nová skladová položka
+exports.onItemCreated = onDocumentCreated(
+  { document: 'warehouse_items/{id}', ...trigOpts },
+  async (event) => {
+    const d = event.data && event.data.data();
+    if (!d || d._origin === 'bulk') return;
+    await sendWebPush({
+      title: '📦 Nová skladová položka',
+      body: `${d.name || ''}${d.quantity ? ` — ${d.quantity} ${d.unit || 'ks'}` : ''}`,
+      tag: `item-${event.params.id}`,
+      url: '/',
+    }, d._origin);
   }
 );

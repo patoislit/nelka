@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db, getLocalUserId } from '../lib/firebase';
+import { deviceOrigin } from '../lib/push';
 
 export interface WarehouseItem {
   id: string; companyId: string; code: string; name: string; unit: string;
@@ -20,11 +21,11 @@ interface WarehouseStore {
   movements: StockMovement[];
   loadForUser: (userId: string) => Promise<void>;
   clearData: () => void;
-  addItem(data: Omit<WarehouseItem, 'id' | 'createdAt'>): WarehouseItem;
+  addItem(data: Omit<WarehouseItem, 'id' | 'createdAt'>, origin?: string): WarehouseItem;
   updateItem(id: string, data: Partial<WarehouseItem>): void;
   deleteItem(id: string): void;
   getItemsForCompany(companyId: string): WarehouseItem[];
-  addMovement(data: Omit<StockMovement, 'id'>): StockMovement;
+  addMovement(data: Omit<StockMovement, 'id'>, origin?: string): StockMovement;
   getMovementsForCompany(companyId: string): StockMovement[];
   getMovementsForItem(itemId: string): StockMovement[];
 }
@@ -50,11 +51,11 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
 
   clearData: () => set({ items: [], movements: [] }),
 
-  addItem(data) {
+  addItem(data, origin = deviceOrigin()) {
     const userId = getLocalUserId();
     const item: WarehouseItem = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     set((s) => ({ items: [...s.items, item] }));
-    setDoc(doc(db, 'warehouse_items', item.id), { userId, ...item })
+    setDoc(doc(db, 'warehouse_items', item.id), { userId, ...item, _origin: origin })
       .catch((e) => console.error('wh item add:', e));
     return item;
   },
@@ -72,7 +73,7 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
 
   getItemsForCompany(companyId) { return get().items.filter((it) => it.companyId === companyId); },
 
-  addMovement(data) {
+  addMovement(data, origin = deviceOrigin()) {
     const userId = getLocalUserId();
     const movement: StockMovement = { ...data, id: crypto.randomUUID() };
     // jednotková cena = spolu / množstvo
@@ -102,7 +103,7 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
       updateDoc(doc(db, 'warehouse_items', data.itemId), patch)
         .catch((e) => console.error('qty update:', e));
     }
-    setDoc(doc(db, 'stock_movements', movement.id), { userId, ...movement })
+    setDoc(doc(db, 'stock_movements', movement.id), { userId, ...movement, _origin: origin })
       .catch((e) => console.error('movement add:', e));
     return movement;
   },

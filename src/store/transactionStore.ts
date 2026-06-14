@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db, getLocalUserId } from '../lib/firebase';
+import { deviceOrigin } from '../lib/push';
 
 export type SimpleCategory =
   | 'sales' | 'services' | 'other_income'
@@ -29,10 +30,10 @@ interface TransactionStore {
   journalEntries: JournalEntry[];
   loadForUser: (userId: string) => Promise<void>;
   clearData: () => void;
-  addSimple: (t: Omit<SimpleTransaction, 'id' | 'createdAt'>) => void;
+  addSimple: (t: Omit<SimpleTransaction, 'id' | 'createdAt'>, origin?: string) => void;
   deleteSimple: (id: string) => void;
   getSimple: (companyId: string) => SimpleTransaction[];
-  addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'entryNo' | 'createdAt'>) => JournalEntry | null;
+  addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'entryNo' | 'createdAt'>, origin?: string) => JournalEntry | null;
   deleteJournalEntry: (id: string) => void;
   getJournalEntries: (companyId: string) => JournalEntry[];
   getAccountBalance: (companyId: string, accountCode: string) => { debitCents: number; creditCents: number };
@@ -65,11 +66,11 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
   clearData: () => set({ simpleTransactions: [], journalEntries: [] }),
 
-  addSimple: (t) => {
+  addSimple: (t, origin = deviceOrigin()) => {
     const userId = getLocalUserId();
     const tx: SimpleTransaction = { ...t, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     set((s) => ({ simpleTransactions: [tx, ...s.simpleTransactions] }));
-    setDoc(doc(db, 'simple_transactions', tx.id), { userId, companyId: tx.companyId, date: tx.date, description: tx.description, type: tx.type, category: tx.category, amountCents: tx.amountCents, note: tx.note, createdAt: tx.createdAt })
+    setDoc(doc(db, 'simple_transactions', tx.id), { userId, companyId: tx.companyId, date: tx.date, description: tx.description, type: tx.type, category: tx.category, amountCents: tx.amountCents, note: tx.note, createdAt: tx.createdAt, _origin: origin })
       .catch((e) => console.error('simple add:', e));
   },
 
@@ -80,13 +81,13 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
   getSimple: (companyId) => get().simpleTransactions.filter((t) => t.companyId === companyId),
 
-  addJournalEntry: (entry) => {
+  addJournalEntry: (entry, origin = deviceOrigin()) => {
     if (!isBalanced(entry.lines)) return null;
     const userId  = getLocalUserId();
     const entryNo = get().journalEntries.filter((e) => e.companyId === entry.companyId).length + 1;
     const je: JournalEntry = { ...entry, id: crypto.randomUUID(), entryNo, createdAt: new Date().toISOString() };
     set((s) => ({ journalEntries: [je, ...s.journalEntries] }));
-    setDoc(doc(db, 'journal_entries', je.id), { userId, companyId: je.companyId, entryNo: je.entryNo, date: je.date, description: je.description, lines: je.lines, createdBy: je.createdBy, createdAt: je.createdAt, docType: je.docType ?? '', docNo: je.docNo ?? '' })
+    setDoc(doc(db, 'journal_entries', je.id), { userId, companyId: je.companyId, entryNo: je.entryNo, date: je.date, description: je.description, lines: je.lines, createdBy: je.createdBy, createdAt: je.createdAt, docType: je.docType ?? '', docNo: je.docNo ?? '', _origin: origin })
       .catch((e) => console.error('je add:', e));
     return je;
   },
