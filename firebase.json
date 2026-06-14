@@ -12,5 +12,13 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       }
     ]
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "nelka",
+      "runtime": "nodejs20",
+      "ignore": ["node_modules", ".git", "*.log"]
+    }
+  ]
 }

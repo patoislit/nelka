@@ -1,8 +1,9 @@
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, SHARED_ID } from './firebase';
 
-// VAPID public key — verejná časť páru, súkromný kľúč je v GitHub Actions secret VAPID_PRIVATE_KEY
-export const VAPID_PUBLIC_KEY = 'BDzx2SrNCSUYQMvZWEY4a5YCjTh2PqpFsL0zND42N9x05bWq9xb71JnjPFRHjjRly5ukPQaJBnTmnlsm4E-duvg';
+// VAPID public key — verejná časť páru. Súkromný kľúč je vo Firebase Secret Manager
+// (secret VAPID_PRIVATE_KEY) a používa ho Cloud Function functions/index.js (businessAlerts).
+export const VAPID_PUBLIC_KEY = 'BDMHxhszk0BhHw9Hge_AAQgEAPLCDqn7m0vBavnfIpViM5824wPE-J1_y5eM5tppWsWOFTszAZoxMHkDLawdTag';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
