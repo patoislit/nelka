@@ -60,7 +60,8 @@ function eur(cents) {
  * (to je zariadenie, kde sa zmena spravila). Expirované odhlásenia zmaže.
  */
 async function sendWebPush(payload, excludeOrigin) {
-  webpush.setVapidDetails('mailto:patnko.furiel@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY.value());
+  // .trim() — secret môže mať na konci znak nového riadku (z PowerShell pipe pri uložení)
+  webpush.setVapidDetails('mailto:patnko.furiel@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY.value().trim());
   const db = admin.firestore();
   const snap = await db.collection('push_subscriptions').where('userId', '==', SHARED_ID).get();
   const body = JSON.stringify(payload);
@@ -145,7 +146,7 @@ function buildAlerts({ companies, items, invoices, journalEntries }) {
 exports.businessAlerts = onSchedule(
   { schedule: '0 * * * *', region: REGION, timeZone: TZ, secrets: [VAPID_PRIVATE_KEY] },
   async () => {
-    webpush.setVapidDetails('mailto:patnko.furiel@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY.value());
+    webpush.setVapidDetails('mailto:patnko.furiel@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY.value().trim());
 
     const db = admin.firestore();
     const [subs, companies, items, invoices, journalEntries, logSnap] = await Promise.all([
