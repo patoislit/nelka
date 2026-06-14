@@ -5,6 +5,13 @@ import './index.css'
 import './i18n/index'
 import App from './App.tsx'
 
+// Electron — vlastný frameless titlebar; trieda na <html> spustí layout offset v CSS
+const electronAPI = (window as unknown as { electronAPI?: { isElectron?: boolean; platform?: string } }).electronAPI;
+if (electronAPI?.isElectron) {
+  document.documentElement.classList.add('is-electron');
+  document.documentElement.classList.add(electronAPI.platform === 'darwin' ? 'is-mac' : 'is-win');
+}
+
 // PWA aktualizácie — pri novej verzii zobrazí lištu s tlačidlom namiesto
 // tichého čakania (predtým sa updaty nikdy nedoručili bez vymazania cache)
 const updateSW = registerSW({

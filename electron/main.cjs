@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, Menu } = require('electron');
+const { app, BrowserWindow, shell, Menu, ipcMain } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_DEV === '1';
 const isMac = process.platform === 'darwin';
@@ -9,8 +9,12 @@ function createWindow() {
     height: 800,
     minWidth: 960,
     minHeight: 600,
-    // Mac: skryté tlačidlá, Windows: default frame
+    // Frameless v štýle Claude desktop — vlastný titlebar v appke.
+    // Mac: skryté tlačidlá (traffic lights ostanú), Windows: úplne bez rámu.
+    frame: isMac,
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
+    trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
+    roundedCorners: true,
     backgroundColor: '#0c0c0e',
     icon: path.join(app.getAppPath(), 'public/icons/icon-512.png'),
     webPreferences: {
@@ -21,6 +25,11 @@ function createWindow() {
     },
     show: false,
   });
+
+  // ── Ovládanie okna z vlastného titlebaru (renderer) ──
+  ipcMain.removeHandler?.('win:isMaximized');
+  win.on('maximize', () => win.webContents.send('win:maximized', true));
+  win.on('unmaximize', () => win.webContents.send('win:maximized', false));
 
   // Load app
   if (isDev) {
@@ -103,6 +112,16 @@ function buildMenu() {
 
 app.whenReady().then(() => {
   buildMenu();
+
+  // Ovládanie okna z vlastného titlebaru
+  ipcMain.on('win:minimize', (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
+  ipcMain.on('win:maximize', (e) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (!w) return;
+    if (w.isMaximized()) w.unmaximize(); else w.maximize();
+  });
+  ipcMain.on('win:close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
+
   createWindow();
 
   app.on('activate', () => {

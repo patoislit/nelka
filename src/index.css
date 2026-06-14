@@ -29,6 +29,26 @@ body.dark-mode {
 
 #root { min-height: 100vh; }
 
+/* ── Electron — vlastný frameless titlebar (štýl Claude desktop) ───────────── */
+.titlebar { -webkit-app-region: drag; app-region: drag; }
+.tb-controls { -webkit-app-region: no-drag; app-region: no-drag; }
+.tb-btn {
+  width: 46px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: default;
+  transition: background 0.12s, color 0.12s;
+  -webkit-app-region: no-drag;
+}
+.tb-btn:hover { background: rgba(127, 127, 127, 0.16); }
+.tb-close:hover { background: #e81123 !important; color: #ffffff !important; }
+
+/* Posun appky pod titlebar — hlavná obrazovka (AppShell má .h-screen / 100vh) */
+.is-electron .h-screen {
+  height: calc(100vh - 36px) !important;
+  margin-top: 36px;
+}
+/* Na vstupných obrazovkách (login/welcome/firmy) titlebar prekrýva prázdny vrch */
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

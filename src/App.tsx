@@ -12,6 +12,7 @@ import { useAuthStore } from './store/authStore';
 import { NameLoginPage } from './pages/Auth/NameLoginPage';
 import { AppShell } from './components/layout/AppShell';
 import { Logo } from './components/common/Logo';
+import { TitleBar } from './components/layout/TitleBar';
 import { WelcomePage } from './pages/Welcome/WelcomePage';
 import { CompaniesPage } from './pages/Companies/CompaniesPage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -141,6 +142,7 @@ function AppLoader() {
 export default function App() {
   return (
     <ThemeProvider>
+      <TitleBar />
       <AppLoader />
     </ThemeProvider>
   );
