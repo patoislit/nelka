@@ -30,13 +30,22 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState('');
 
-  // Auto-fill unit price from item when selecting item
+  // Predvyplň jednotkovú cenu podľa typu pohybu: príjem → nákupná, výdaj → predajná
+  const prefillPrice = (id: string, movType: MovementType) => {
+    const item = items.find((it) => it.id === id);
+    if (!item) return;
+    const cents = movType === 'in' ? item.purchasePriceCents : item.salePriceCents;
+    setUnitPrice(cents > 0 ? (cents / 100).toFixed(2).replace('.', ',') : '0,00');
+  };
+
   const handleItemChange = (id: string) => {
     setItemId(id);
-    const item = items.find((it) => it.id === id);
-    if (item && item.salePriceCents > 0) {
-      setUnitPrice((item.salePriceCents / 100).toFixed(2).replace('.', ','));
-    }
+    prefillPrice(id, type);
+  };
+
+  const handleTypeChange = (movType: MovementType) => {
+    setType(movType);
+    if (itemId) prefillPrice(itemId, movType);
   };
 
   // Total = quantity × unitPrice
@@ -55,11 +64,10 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
     setQuantity('1');
     setDate(new Date().toISOString().slice(0, 10));
     setDescription('');
-    // Pre-fill price from item
+    // Predvyplň cenu — default typ je príjem → nákupná cena
     const item = items.find((it) => it.id === id);
-    if (item && item.salePriceCents > 0) {
-      const cents = item.salePriceCents;
-      setUnitPrice((cents / 100).toFixed(2).replace('.', ','));
+    if (item && item.purchasePriceCents > 0) {
+      setUnitPrice((item.purchasePriceCents / 100).toFixed(2).replace('.', ','));
     } else {
       setUnitPrice('0,00');
     }
@@ -69,6 +77,16 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
 
   const handleSave = () => {
     if (!company || !itemId) return;
+    if (qty <= 0) return;
+
+    // Výdaj nesmie prekročiť aktuálnu zásobu (sklad by šiel do mínusu)
+    if (type === 'out') {
+      const item = items.find((it) => it.id === itemId);
+      if (item && qty > item.quantity) {
+        alert(`Na sklade je len ${item.quantity} ${item.unit} — nemôžeš vydať ${qty}.`);
+        return;
+      }
+    }
 
     const movement = addMovement({
       companyId: company.id,
@@ -140,7 +158,7 @@ export function MovementModal({ open, onClose, preselectedItemId }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={labelStyle}>{t('warehouse.movement_type')}</label>
-            <select style={{ ...inputStyle, cursor: 'pointer' }} value={type} onChange={(e) => setType(e.target.value as MovementType)}>
+            <select style={{ ...inputStyle, cursor: 'pointer' }} value={type} onChange={(e) => handleTypeChange(e.target.value as MovementType)}>
               <option value="in">{t('warehouse.movement_in')}</option>
               <option value="out">{t('warehouse.movement_out')}</option>
               <option value="adjustment">{t('warehouse.movement_adj')}</option>

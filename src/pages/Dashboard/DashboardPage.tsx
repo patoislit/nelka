@@ -69,7 +69,6 @@ export function DashboardPage() {
     {
       label: t('dashboard.stat_income'),
       value: centsToEur(income) + ' €',
-      sub: t('dashboard.stat_this_month'),
       accent: '#10b981',
       accentBg: dark ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.08)',
       icon: (
@@ -81,7 +80,6 @@ export function DashboardPage() {
     {
       label: t('dashboard.stat_expense'),
       value: centsToEur(expense) + ' €',
-      sub: t('dashboard.stat_this_month'),
       accent: '#ef4444',
       accentBg: dark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.08)',
       icon: (
@@ -93,7 +91,6 @@ export function DashboardPage() {
     {
       label: t('dashboard.stat_balance'),
       value: centsToEur(balance) + ' €',
-      sub: t('dashboard.stat_total'),
       accent: '#f97316',
       accentBg: dark ? 'rgba(249,115,22,0.1)' : 'rgba(249,115,22,0.08)',
       icon: (
@@ -105,7 +102,6 @@ export function DashboardPage() {
     {
       label: company?.type === 'double' ? t('dashboard.stat_entries') : t('dashboard.stat_transactions'),
       value: String(txCount),
-      sub: t('dashboard.stat_total'),
       accent: '#8b5cf6',
       accentBg: dark ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.08)',
       icon: (
@@ -201,7 +197,11 @@ export function DashboardPage() {
     }
   }
   const pieData = Object.entries(pieDataMap)
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, value]) => ({
+      // jednoduché účtovníctvo: prelož kategóriu (rent → Nájom); podvojné: nechaj kód skupiny (50x)
+      name: company?.type === 'simple' ? t(`transactions.categories.${name}`) : name,
+      value,
+    }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 7);
   const pieTotal = pieData.reduce((s, d) => s + d.value, 0);
@@ -231,7 +231,8 @@ export function DashboardPage() {
     ? getInvoicesForCompany(company.id).filter(
         (inv) =>
           inv.status === 'overdue' ||
-          (inv.status === 'sent' && inv.dueDate >= today && inv.dueDate <= in7Days)
+          // 'sent' po splatnosti = po splatnosti, aj keď status ešte nikto neprepol
+          (inv.status === 'sent' && inv.dueDate <= in7Days)
       )
     : [];
 
@@ -307,10 +308,9 @@ export function DashboardPage() {
                 {s.icon}
                 <span style={{ fontSize: 11, fontWeight: 700, color: s.accent, letterSpacing: '0.02em' }}>{s.label}</span>
               </div>
-              <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.04em', color: text, lineHeight: 1, marginBottom: 4 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.04em', color: text, lineHeight: 1 }}>
                 {s.value}
               </div>
-              <div style={{ fontSize: 11, color: muted, fontWeight: 500 }}>{s.sub}</div>
             </div>
           ))}
         </div>
@@ -522,7 +522,7 @@ export function DashboardPage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {alertInvoices.map((inv) => {
-                const isOverdue = inv.status === 'overdue';
+                const isOverdue = inv.status === 'overdue' || inv.dueDate < today;
                 const alertBg = isOverdue
                   ? (dark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)')
                   : (dark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.04)');
