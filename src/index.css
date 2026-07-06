@@ -132,9 +132,24 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   }
 }
 
-/* PWA install banner spacing */
+/* Mobil: kontajner appky presne vyplní VIDITEĽNÝ viewport (dvh sleduje lišty
+   prehliadača). Telo sa tak nemá kam poscrollovať a horná lišta sa nikdy
+   neschová pod stavový riadok (hodiny/batériu). */
+.h-screen { height: 100dvh; }
+
 @media (display-mode: standalone) {
-  body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior-y: none;
+  }
+  /* 100dvh mínus safe-area odsadenia = presne zvyšok obrazovky */
+  .h-screen {
+    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  #root {
+    min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
 }
 
 /* ── Warehouse table scroll ─────────────────────────────────────────────── */
