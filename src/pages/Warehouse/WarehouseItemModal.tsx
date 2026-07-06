@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '../../components/common/Modal';
 import { Button } from '../../components/common/Button';
 import { useDark } from '../../store/themeStore';
-import { useWarehouseStore } from '../../store/warehouseStore';
+import { useWarehouseStore, itemUnitValueCents } from '../../store/warehouseStore';
 import type { WarehouseItem } from '../../store/warehouseStore';
-import { centsToEur, eurToCents } from '../../store/transactionStore';
+import { centsToEur } from '../../store/transactionStore';
 import { useCompanyStore } from '../../store/companyStore';
 
 interface Props { open: boolean; onClose: () => void; item?: WarehouseItem; }
@@ -19,10 +19,9 @@ export function WarehouseItemModal({ open, onClose, item }: Props) {
   const { getActiveCompany } = useCompanyStore();
   const company = getActiveCompany();
 
-  const [name,      setName]      = useState('');
-  const [unit,      setUnit]      = useState('ks');
-  const [quantity,  setQuantity]  = useState('0');
-  const [salePrice, setSalePrice] = useState('0,00');
+  const [name,     setName]     = useState('');
+  const [unit,     setUnit]     = useState('ks');
+  const [quantity, setQuantity] = useState('0');
 
   useEffect(() => {
     if (!open) return;
@@ -30,26 +29,29 @@ export function WarehouseItemModal({ open, onClose, item }: Props) {
       setName(item.name);
       setUnit(item.unit);
       setQuantity(String(item.quantity));
-      setSalePrice(centsToEur(item.salePriceCents));
     } else {
-      setName(''); setUnit('ks'); setQuantity('0'); setSalePrice('0,00');
+      setName(''); setUnit('ks'); setQuantity('0');
     }
   }, [open, item]);
 
   const handleSave = () => {
     if (!company || !name.trim()) return;
-    const data = {
-      companyId: company.id,
-      code: '',
-      name,
-      unit,
-      quantity: parseFloat(quantity.replace(',', '.')) || 0,
-      purchasePriceCents: 0,
-      salePriceCents: eurToCents(salePrice),
-      lowStockThreshold: 0,
-    };
-    if (item) updateItem(item.id, data);
-    else      addItem(data);
+    const qty = parseFloat(quantity.replace(',', '.')) || 0;
+    if (item) {
+      // ceny sa karty netýkajú — riadi ich príjem tovaru (vážený priemer)
+      updateItem(item.id, { name, unit, quantity: qty });
+    } else {
+      addItem({
+        companyId: company.id,
+        code: '',
+        name,
+        unit,
+        quantity: qty,
+        purchasePriceCents: 0,
+        salePriceCents: 0,
+        lowStockThreshold: 0,
+      });
+    }
     onClose();
   };
 
@@ -64,6 +66,8 @@ export function WarehouseItemModal({ open, onClose, item }: Props) {
     color: textMain, fontSize: 14, fontFamily: "'Inter', sans-serif",
     boxSizing: 'border-box' as const, outline: 'none',
   };
+
+  const stockValueCents = item ? Math.round(item.quantity * itemUnitValueCents(item)) : 0;
 
   return (
     <Modal open={open} onClose={onClose} title={item ? t('warehouse.edit_item') : t('warehouse.new_item')} size="sm">
@@ -96,14 +100,22 @@ export function WarehouseItemModal({ open, onClose, item }: Props) {
           </div>
         </div>
 
-        <div>
-          <label style={labelStyle}>{t('warehouse.price')} (€)</label>
-          <input
-            style={{ ...inputStyle, fontSize: 18, fontWeight: 700, color: '#f97316', textAlign: 'right' }}
-            type="text" inputMode="decimal"
-            value={salePrice} onChange={(e) => setSalePrice(e.target.value)}
-          />
-        </div>
+        {/* Hodnota zásoby — len na čítanie, počíta sa z cien zadaných pri príjmoch */}
+        {item && (
+          <div style={{
+            padding: '12px 14px', borderRadius: 12,
+            background: dark ? 'rgba(249,115,22,0.08)' : '#fff7ed',
+            border: `1px solid ${dark ? 'rgba(249,115,22,0.2)' : 'rgba(249,115,22,0.18)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: textMuted }}>{t('warehouse.value')}</span>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#f97316' }}>{centsToEur(stockValueCents)} €</span>
+          </div>
+        )}
+
+        <p style={{ fontSize: 11.5, color: textMuted, margin: 0, lineHeight: 1.5 }}>
+          Cenu zadávaš pri každom príjme tovaru — hodnota zásoby sa počíta automaticky (vážený priemer nákupov).
+        </p>
 
         <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
           <Button variant="secondary" fullWidth onClick={onClose}>{t('common.cancel')}</Button>

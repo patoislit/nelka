@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, ArrowUpDown, FileText, FileSpreadsheet, Search, X } from 'lucide-react';
 import { useDark } from '../../store/themeStore';
-import { useWarehouseStore } from '../../store/warehouseStore';
+import { useWarehouseStore, itemUnitValueCents } from '../../store/warehouseStore';
 import type { WarehouseItem } from '../../store/warehouseStore';
 import { useCompanyStore } from '../../store/companyStore';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -90,8 +90,9 @@ export function WarehousePage() {
         it.code.toLowerCase().includes(search.toLowerCase())
       )
     : items;
-  // Hodnota skladu — predajné ceny
-  const totalValue = items.reduce((sum, it) => sum + it.quantity * it.salePriceCents, 0);
+  // Hodnota skladu — vážený priemer nákupných cien z príjmov (staré položky: fallback na ich cenu)
+  const itemValueCents = (it: WarehouseItem) => Math.round(it.quantity * itemUnitValueCents(it));
+  const totalValue = items.reduce((sum, it) => sum + itemValueCents(it), 0);
 
   const exportPdf = () => {
     const doc = new jsPDF();
@@ -101,8 +102,8 @@ export function WarehousePage() {
     doc.text(pd(`${t('warehouse.total_value')}: ${centsToEur(totalValue)} EUR`), 14, 26);
     autoTable(doc, {
       startY: 32,
-      head: [[pd(t('warehouse.code')), pd(t('warehouse.name')), pd(t('warehouse.unit')), pd(t('warehouse.quantity')), pd(t('warehouse.purchase_price')), pd(t('warehouse.sale_price'))]],
-      body: items.map((it) => [pd(it.code), pd(it.name), pd(it.unit), it.quantity, centsToEur(it.purchasePriceCents) + ' EUR', centsToEur(it.salePriceCents) + ' EUR']),
+      head: [[pd(t('warehouse.code')), pd(t('warehouse.name')), pd(t('warehouse.unit')), pd(t('warehouse.quantity')), pd(t('warehouse.value'))]],
+      body: items.map((it) => [pd(it.code), pd(it.name), pd(it.unit), it.quantity, centsToEur(itemValueCents(it)) + ' EUR']),
       styles: { fontSize: 9 },
     });
     doc.save(`sklad-${company.name}.pdf`);
@@ -110,8 +111,8 @@ export function WarehousePage() {
 
   const exportExcel = () => {
     const ws = XLSX.utils.aoa_to_sheet([
-      [t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.purchase_price') + ' €', t('warehouse.sale_price') + ' €'],
-      ...items.map((it) => [it.code, it.name, it.unit, it.quantity, (it.purchasePriceCents / 100).toFixed(2), (it.salePriceCents / 100).toFixed(2)]),
+      [t('warehouse.code'), t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.value') + ' €'],
+      ...items.map((it) => [it.code, it.name, it.unit, it.quantity, (itemValueCents(it) / 100).toFixed(2)]),
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sklad');
@@ -235,8 +236,8 @@ export function WarehousePage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${border}` }}>
-                    {[t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.price'), t('warehouse.value'), ''].map((h, i) => (
-                      <th key={i} style={{ padding: '12px 16px', textAlign: i < 5 ? 'left' as const : 'right' as const, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{h}</th>
+                    {[t('warehouse.name'), t('warehouse.unit'), t('warehouse.quantity'), t('warehouse.value'), ''].map((h, i) => (
+                      <th key={i} style={{ padding: '12px 16px', textAlign: i < 4 ? 'left' as const : 'right' as const, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -251,8 +252,7 @@ export function WarehousePage() {
                       <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: textMain }}>{item.name}</td>
                       <td style={{ padding: '11px 16px', fontSize: 13, color: textMuted }}>{item.unit}</td>
                       <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: textMain }}>{item.quantity}</td>
-                      <td style={{ padding: '11px 16px', fontSize: 13, color: '#f97316', fontWeight: 600 }}>{centsToEur(item.salePriceCents)} €</td>
-                      <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: textMain }}>{centsToEur(item.quantity * item.salePriceCents)} €</td>
+                      <td style={{ padding: '11px 16px', fontSize: 13, color: '#f97316', fontWeight: 600 }}>{centsToEur(itemValueCents(item))} €</td>
                       <td style={{ padding: '11px 16px' }}>
                         <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end' }}>
                           <button onClick={() => openEditItem(item)} title={t('common.edit')} style={iconBtnStyle(dark)}>

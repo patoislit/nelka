@@ -6,6 +6,15 @@ import { deviceOrigin } from '../lib/push';
 let unsubItems: (() => void) | null = null;
 let unsubMovements: (() => void) | null = null;
 
+/**
+ * Jednotková hodnota položky (centy) — vážený priemer nákupných cien z príjmov.
+ * Staršie položky, ktoré majú zadanú len predajnú cenu, používajú tú (fallback),
+ * aby ich hodnota nezmizla po prechode na nový model.
+ */
+export function itemUnitValueCents(item: Pick<WarehouseItem, 'purchasePriceCents' | 'salePriceCents'>): number {
+  return item.purchasePriceCents > 0 ? item.purchasePriceCents : item.salePriceCents;
+}
+
 export interface WarehouseItem {
   id: string; companyId: string; code: string; name: string; unit: string;
   quantity: number; purchasePriceCents: number; salePriceCents: number;
@@ -105,18 +114,26 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
         if (data.type === 'in')       qty += data.quantity;
         else if (data.type === 'out') qty -= data.quantity;
         else                          qty  = data.quantity;
-        // príjem aktualizuje nákupnú cenu, výdaj predajnú; úprava ceny nemení
-        const purchasePriceCents = data.type === 'in' && newUnitPriceCents > 0 ? newUnitPriceCents : it.purchasePriceCents;
-        const salePriceCents = data.type === 'out' && newUnitPriceCents > 0 ? newUnitPriceCents : it.salePriceCents;
-        return { ...it, quantity: qty, purchasePriceCents, salePriceCents };
+        // Cena sa zadáva pri každom príjme — jednotková hodnota položky je
+        // VÁŽENÝ PRIEMER: (stará zásoba × stará hodnota + príjem × nová cena) / nové množstvo.
+        // Výdaj a úprava hodnotu jednotky nemenia.
+        let purchasePriceCents = it.purchasePriceCents;
+        if (data.type === 'in' && newUnitPriceCents > 0) {
+          const oldQty = Math.max(0, it.quantity);
+          const oldUnit = itemUnitValueCents(it);
+          const newQty = oldQty + data.quantity;
+          purchasePriceCents = newQty > 0
+            ? Math.round((oldQty * oldUnit + data.quantity * newUnitPriceCents) / newQty)
+            : newUnitPriceCents;
+        }
+        return { ...it, quantity: qty, purchasePriceCents };
       });
       return { items, movements: [movement, ...s.movements] };
     });
     const updatedItem = get().items.find((it) => it.id === data.itemId);
     if (updatedItem) {
       const patch: Record<string, unknown> = { quantity: updatedItem.quantity };
-      if (newUnitPriceCents > 0 && data.type === 'in')  patch.purchasePriceCents = updatedItem.purchasePriceCents;
-      if (newUnitPriceCents > 0 && data.type === 'out') patch.salePriceCents = updatedItem.salePriceCents;
+      if (newUnitPriceCents > 0 && data.type === 'in') patch.purchasePriceCents = updatedItem.purchasePriceCents;
       updateDoc(doc(db, 'warehouse_items', data.itemId), patch)
         .catch((e) => console.error('qty update:', e));
     }
