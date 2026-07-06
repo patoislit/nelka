@@ -1,6 +1,8 @@
 import { create } from 'zustand';
-import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { db, getLocalUserId } from '../lib/firebase';
+import { collection, doc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db, getLocalUserId, listen } from '../lib/firebase';
+
+let unsubInvoices: (() => void) | null = null;
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
@@ -34,8 +36,10 @@ const COL = 'invoices';
 export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
   invoices: [],
 
-  loadForUser: async (userId) => {
-      const snap = await getDocs(query(collection(db, COL), where('userId', '==', userId)));
+  loadForUser: (userId) => {
+    // realtime — zmeny z iného zariadenia sa prejavia okamžite
+    unsubInvoices?.();
+    const { ready, unsub } = listen(query(collection(db, COL), where('userId', '==', userId)), (snap) => {
       set({
         invoices: snap.docs
           .map((d) => {
@@ -51,9 +55,15 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
           })
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       });
+    });
+    unsubInvoices = unsub;
+    return ready;
   },
 
-  clearData: () => set({ invoices: [] }),
+  clearData: () => {
+    unsubInvoices?.(); unsubInvoices = null;
+    set({ invoices: [] });
+  },
 
   addInvoice(data) {
     const userId = getLocalUserId();

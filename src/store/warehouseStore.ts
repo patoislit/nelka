@@ -1,7 +1,10 @@
 import { create } from 'zustand';
-import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { db, getLocalUserId } from '../lib/firebase';
+import { collection, doc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db, getLocalUserId, listen } from '../lib/firebase';
 import { deviceOrigin } from '../lib/push';
+
+let unsubItems: (() => void) | null = null;
+let unsubMovements: (() => void) | null = null;
 
 export interface WarehouseItem {
   id: string; companyId: string; code: string; name: string; unit: string;
@@ -34,22 +37,36 @@ export const useWarehouseStore = create<WarehouseStore>((set, get) => ({
   items: [],
   movements: [],
 
-  loadForUser: async (userId) => {
-      const [itemsSnap, movSnap] = await Promise.all([
-        getDocs(query(collection(db, 'warehouse_items'), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'stock_movements'), where('userId', '==', userId))),
-      ]);
+  loadForUser: (userId) => {
+    // realtime — zmeny z iného zariadenia sa prejavia okamžite
+    unsubItems?.(); unsubMovements?.();
+
+    const itemsSub = listen(query(collection(db, 'warehouse_items'), where('userId', '==', userId)), (snap) => {
       set({
-        items: itemsSnap.docs
+        items: snap.docs
           .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, code: r.code, name: r.name, unit: r.unit, quantity: r.quantity, purchasePriceCents: r.purchasePriceCents, salePriceCents: r.salePriceCents, lowStockThreshold: r.lowStockThreshold, createdAt: r.createdAt }; })
           .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-        movements: movSnap.docs
+      });
+    });
+    unsubItems = itemsSub.unsub;
+
+    const movSub = listen(query(collection(db, 'stock_movements'), where('userId', '==', userId)), (snap) => {
+      set({
+        movements: snap.docs
           .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, itemId: r.itemId, type: r.type, quantity: r.quantity, priceCents: r.priceCents, date: r.date, description: r.description, ref: r.ref }; })
           .sort((a, b) => b.date.localeCompare(a.date)),
       });
+    });
+    unsubMovements = movSub.unsub;
+
+    return Promise.all([itemsSub.ready, movSub.ready]).then(() => {});
   },
 
-  clearData: () => set({ items: [], movements: [] }),
+  clearData: () => {
+    unsubItems?.(); unsubItems = null;
+    unsubMovements?.(); unsubMovements = null;
+    set({ items: [], movements: [] });
+  },
 
   addItem(data, origin = deviceOrigin()) {
     const userId = getLocalUserId();

@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, onSnapshot } from 'firebase/firestore';
+import type { Query, QuerySnapshot, DocumentData } from 'firebase/firestore';
 
 // Firebase config — tieto hodnoty NIE SÚ tajné, sú súčasťou verejného JS bundle
 // Bezpečnosť je riešená cez Firestore Security Rules
@@ -28,4 +29,30 @@ export function getDisplayName(): string | null {
 }
 export function setDisplayName(name: string): void {
   localStorage.setItem('nelka_name', name.trim());
+}
+
+// ── Realtime odber ──────────────────────────────────────────────────────────────
+/**
+ * Prihlási realtime listener na query. `apply` sa zavolá pri každej zmene
+ * (aj zo iného zariadenia — okamžitá synchronizácia). Vrátená `ready` promise
+ * sa vyrieši po prvom načítaní (zlyhanie prvého = reject, nech appka ukáže chybu).
+ */
+export function listen(
+  q: Query<DocumentData>,
+  apply: (snap: QuerySnapshot<DocumentData>) => void,
+): { ready: Promise<void>; unsub: () => void } {
+  let resolveFn: () => void = () => {};
+  let rejectFn: (e: unknown) => void = () => {};
+  const ready = new Promise<void>((res, rej) => { resolveFn = res; rejectFn = rej; });
+  let first = true;
+
+  const unsub = onSnapshot(q, (snap) => {
+    apply(snap);
+    if (first) { first = false; resolveFn(); }
+  }, (err) => {
+    console.error('onSnapshot:', err);
+    if (first) { first = false; rejectFn(err); }
+  });
+
+  return { ready, unsub };
 }

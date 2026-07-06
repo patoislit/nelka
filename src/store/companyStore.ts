@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import {
-  collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where,
+  collection, doc, setDoc, updateDoc, deleteDoc, query, where,
 } from 'firebase/firestore';
-import { db, getLocalUserId } from '../lib/firebase';
+import { db, getLocalUserId, listen } from '../lib/firebase';
+
+let unsubCompanies: (() => void) | null = null;
 
 export type AccountingType = 'simple' | 'double';
 
@@ -46,22 +48,30 @@ export const useCompanyStore = create<CompanyStore>()(
       companies: [],
       activeCompanyId: null,
 
-      loadForUser: async (userId) => {
-        const snap = await getDocs(query(collection(db, COL), where('userId', '==', userId)));
-        const docs = snap.docs.sort((a, b) => (a.data().createdAt ?? '').localeCompare(b.data().createdAt ?? ''));
-        set({
-          companies: docs.map((d) => {
-            const r = d.data();
-            return {
-              id: d.id, name: r.name, ico: r.ico, dic: r.dic, type: r.type, createdAt: r.createdAt, ownerId: r.userId,
-              address: r.address, city: r.city, zip: r.zip, email: r.email, phone: r.phone,
-              iban: r.iban, bank: r.bank, logoDataUrl: r.logoDataUrl,
-            };
-          }),
+      loadForUser: (userId) => {
+        // realtime — zmeny z iného zariadenia sa prejavia okamžite
+        unsubCompanies?.();
+        const { ready, unsub } = listen(query(collection(db, COL), where('userId', '==', userId)), (snap) => {
+          const docs = [...snap.docs].sort((a, b) => (a.data().createdAt ?? '').localeCompare(b.data().createdAt ?? ''));
+          set({
+            companies: docs.map((d) => {
+              const r = d.data();
+              return {
+                id: d.id, name: r.name, ico: r.ico, dic: r.dic, type: r.type, createdAt: r.createdAt, ownerId: r.userId,
+                address: r.address, city: r.city, zip: r.zip, email: r.email, phone: r.phone,
+                iban: r.iban, bank: r.bank, logoDataUrl: r.logoDataUrl,
+              };
+            }),
+          });
         });
+        unsubCompanies = unsub;
+        return ready;
       },
 
-      clearData: () => set({ companies: [] }),
+      clearData: () => {
+        unsubCompanies?.(); unsubCompanies = null;
+        set({ companies: [] });
+      },
 
       addCompany: (data) => {
         const userId = getLocalUserId();

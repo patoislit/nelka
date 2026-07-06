@@ -1,7 +1,10 @@
 import { create } from 'zustand';
-import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { db, getLocalUserId } from '../lib/firebase';
+import { collection, doc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db, getLocalUserId, listen } from '../lib/firebase';
 import { deviceOrigin } from '../lib/push';
+
+let unsubSimple: (() => void) | null = null;
+let unsubJournal: (() => void) | null = null;
 
 export type SimpleCategory =
   | 'sales' | 'services' | 'other_income'
@@ -49,22 +52,36 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   simpleTransactions: [],
   journalEntries: [],
 
-  loadForUser: async (userId) => {
-      const [simpleSnap, entriesSnap] = await Promise.all([
-        getDocs(query(collection(db, 'simple_transactions'), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'journal_entries'),     where('userId', '==', userId))),
-      ]);
+  loadForUser: (userId) => {
+    // realtime — zmeny z iného zariadenia sa prejavia okamžite
+    unsubSimple?.(); unsubJournal?.();
+
+    const simple = listen(query(collection(db, 'simple_transactions'), where('userId', '==', userId)), (snap) => {
       set({
-        simpleTransactions: simpleSnap.docs
+        simpleTransactions: snap.docs
           .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, date: r.date, description: r.description, type: r.type, category: r.category, amountCents: r.amountCents, note: r.note, createdAt: r.createdAt }; })
           .sort((a, b) => b.date.localeCompare(a.date)),
-        journalEntries: entriesSnap.docs
+      });
+    });
+    unsubSimple = simple.unsub;
+
+    const journal = listen(query(collection(db, 'journal_entries'), where('userId', '==', userId)), (snap) => {
+      set({
+        journalEntries: snap.docs
           .map((d) => { const r = d.data(); return { id: d.id, companyId: r.companyId, entryNo: r.entryNo, date: r.date, description: r.description, lines: r.lines ?? [], createdAt: r.createdAt, createdBy: r.createdBy ?? '', docType: r.docType ?? '', docNo: r.docNo ?? '' }; })
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       });
+    });
+    unsubJournal = journal.unsub;
+
+    return Promise.all([simple.ready, journal.ready]).then(() => {});
   },
 
-  clearData: () => set({ simpleTransactions: [], journalEntries: [] }),
+  clearData: () => {
+    unsubSimple?.(); unsubSimple = null;
+    unsubJournal?.(); unsubJournal = null;
+    set({ simpleTransactions: [], journalEntries: [] });
+  },
 
   addSimple: (t, origin = deviceOrigin()) => {
     const userId = getLocalUserId();
